@@ -1,0 +1,9 @@
+TODO: 
+
+- Implementing Instagram's API : DONE 
+- Hashtag conversion (adding # to each word for Twitter and IG) 
+- Code Cleaning (generic functions needed)
+- Find a way to do image compression for twitter (to avoid the >5MB error)
+- More try catches
+- Create a git repository DONE
+- Post on GitHub DONE
