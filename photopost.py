@@ -31,7 +31,8 @@ print ("Welcome to the simplephotoposter!")
 
 #chose a file (from a given path)
 filepath = input ("Enter a path for your picture to post:")
-image = open(filepath, 'rb')
+tweetpath = spplib.tweetableImg(filepath)
+image = open(tweetpath, 'rb')
 
 #give it a title
 title = input ("Give a title to your picture:")
@@ -55,7 +56,7 @@ twitter = Twython(
 
 response = twitter.upload_media(media=image)
 media_id = [response['media_id']]
-tweet = tweetable(description+" "+hashtagify(tags))
+tweet = spplib.tweetable(description+" "+spplib.hashtagify(tags))
 twitter.update_status(status=tweet, media_ids=media_id)
 print("Tweeted: %s" % tweet)
 
@@ -74,7 +75,7 @@ print("Flickered: %s" % description+" "+tags)
 #Instagram Post
 camera = input ("Which camera did you use ?")
 lens = input ("And which lens ?")
-text = title + ".\n.\n" + u"U+1F4F7" + camera + " - " + lens + ".\n.\n" + description + ".\n.\n" + hashtagify(tags)
+text = title + ".\n.\n" + u"U+1F4F7" + camera + " - " + lens + ".\n.\n" + description + ".\n.\n" + spplib.hashtagify(tags)
 with client(username, password) as cli:    cli.upload(filepath, text)
 print ("Instagrammed : " + text)
 
