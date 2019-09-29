@@ -1,3 +1,5 @@
+import spplib
+
 #Twitter dependencies
 from twython import Twython
 from twitterauth import (
@@ -38,7 +40,7 @@ title = input ("Give a title to your picture:")
 description = input ("Give a legend to your picture:")
 
 #give it some hashtags
-hashtags = input ("Give it now some hashtags:")
+tags = input ("Give it now some tags:")
 
 #POST
 print ("And here ya go!")
@@ -53,25 +55,26 @@ twitter = Twython(
 
 response = twitter.upload_media(media=image)
 media_id = [response['media_id']]
-twitter.update_status(status=description+" "+hashtags, media_ids=media_id)
-print("Tweeted: %s" % description+" "+hashtags)
+tweet = tweetable(description+" "+hashtagify(tags))
+twitter.update_status(status=tweet, media_ids=media_id)
+print("Tweeted: %s" % tweet)
 
 
 #Flickr Post
 flickr = flickrapi.FlickrAPI(api_key, api_secret)
 flickr.authenticate_via_browser(perms='delete')
 try:    
-    result = flickr.upload(filename=filepath, title=title, description=description, tags=hashtags)
+    result = flickr.upload(filename=filepath, title=title, description=description, tags=tags)
     print(result.text)
 except Exception as error:
     print('Upload failed', error)  
-print("Flickered: %s" % description+" "+hashtags)
+print("Flickered: %s" % description+" "+tags)
 
 
 #Instagram Post
 camera = input ("Which camera did you use ?")
 lens = input ("And which lens ?")
-text = title + ".\n.\n" + camera + ".\n" + lens + ".\n.\n" + description + ".\n.\n" + hashtags
+text = title + ".\n.\n" + u"U+1F4F7" + camera + " - " + lens + ".\n.\n" + description + ".\n.\n" + hashtagify(tags)
 with client(username, password) as cli:    cli.upload(filepath, text)
 print ("Instagrammed : " + text)
 
