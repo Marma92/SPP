@@ -75,7 +75,7 @@ print("Flickered: %s" % description+" "+tags)
 #Instagram Post
 camera = input ("Which camera did you use ?")
 lens = input ("And which lens ?")
-text = title + ".\n.\n" + u"U+1F4F7" + camera + " - " + lens + ".\n.\n" + description + ".\n.\n" + spplib.hashtagify(tags)
+text = title + ".\n.\n" + 📷 + camera + " - " + lens + ".\n.\n" + description + ".\n.\n" + spplib.hashtagify(tags)
 with client(username, password) as cli:    cli.upload(filepath, text)
 print ("Instagrammed : " + text)
 
