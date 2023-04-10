@@ -17,10 +17,11 @@ from flickrauth import (
 )
 
 #Instagram dependencies
-from instapy_cli import client
+from instagrapi import Client
 from instaauth import(
     username,
     password)
+from instagrapi.types import Usertag, Location
 
 
 print ("Welcome to the simplephotoposter!")
@@ -56,26 +57,53 @@ twitter = Twython(
 
 response = twitter.upload_media(media=image)
 media_id = [response['media_id']]
-tweet = spplib.tweetable(description+" "+spplib.hashtagify(tags))
-twitter.update_status(status=tweet, media_ids=media_id)
-print("Tweeted: %s" % tweet)
-
+try:
+    tweet = spplib.tweetable(description+" "+spplib.hashtagify(tags))
+    twitter.update_status(status=tweet, media_ids=media_id)
+    print("Tweeted: %s" % tweet)
+except Exception as error:
+    print('Tweet failed', error)
 
 #Flickr Post
 flickr = flickrapi.FlickrAPI(api_key, api_secret)
 flickr.authenticate_via_browser(perms='delete')
-try:    
+try:
     result = flickr.upload(filename=filepath, title=title, description=description, tags=tags)
     print(result.text)
 except Exception as error:
-    print('Upload failed', error)  
+    print('Upload failed', error)
 print("Flickered: %s" % description+" "+tags)
-
 
 #Instagram Post
 camera = input ("Which camera did you use ?")
 lens = input ("And which lens ?")
-text = title + ".\n.\n" + 📷 + camera + " - " + lens + ".\n.\n" + description + ".\n.\n" + spplib.hashtagify(tags)
-with client(username, password) as cli:    cli.upload(filepath, text)
-print ("Instagrammed : " + text)
+film = input ("Which film did you use ? (leave blank if not)")
+lab = input ("Any special lab ? (leave blank if not)")
+scan = input ("Who scanned it ? (leave blank if not)")
+date = input ("Date of capture? (leave blank if not)")
+location = input ("Place of capture? (leave blank if not)")
+if location :
+    lat = input ("Latitude ?")
+    lng = input ("Longitude ?")
+tag = input ("Someone to tag? (leave blank if not)")
 
+if film :
+    film = "🎞️ " + film + ".\n"
+if lab :
+    lab = "🧪 " + lab + ".\n"
+if scan :
+    scan = "💿 " + scan + ".\n"
+if date :
+    date = "🗓️ " + date + ".\n"
+
+text = title + ".\n.\n📷 " + camera + " .\n👁️ " + lens + ".\n" + film + lab + date + ".\n.\n" + description + ".\n.\n" + spplib.hashtagify(tags)
+
+cl = Client()
+cl.login(username, password)
+
+if tag:
+    cl.photo_upload(filepath, text, [Usertag(user=tag, x=0.5, y=0.5)], location=Location(name=location, lat=lat, lng=lng))
+else :
+    cl.photo_upload(filepath, text, location=Location(name=location, lat=lat, lng=lng))
+
+print (text)
