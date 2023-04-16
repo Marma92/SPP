@@ -55,24 +55,24 @@ twitter = Twython(
     access_token_secret
 )
 
-response = twitter.upload_media(media=image)
-media_id = [response['media_id']]
-try:
-    tweet = spplib.tweetable(description+" "+spplib.hashtagify(tags))
-    twitter.update_status(status=tweet, media_ids=media_id)
-    print("Tweeted: %s" % tweet)
-except Exception as error:
-    print('Tweet failed', error)
+# response = twitter.upload_media(media=image)
+# media_id = [response['media_id']]
+# try:
+#     tweet = spplib.tweetable(description+" "+spplib.hashtagify(tags))
+#     twitter.update_status(status=tweet, media_ids=media_id)
+#     print("Tweeted: %s" % tweet)
+# except Exception as error:
+#     print('Tweet failed', error)
 
-#Flickr Post
-flickr = flickrapi.FlickrAPI(api_key, api_secret)
-flickr.authenticate_via_browser(perms='delete')
-try:
-    result = flickr.upload(filename=filepath, title=title, description=description, tags=tags)
-    print(result.text)
-except Exception as error:
-    print('Upload failed', error)
-print("Flickered: %s" % description+" "+tags)
+# #Flickr Post
+# flickr = flickrapi.FlickrAPI(api_key, api_secret)
+# flickr.authenticate_via_browser(perms='delete')
+# try:
+#     result = flickr.upload(filename=filepath, title=title, description=description, tags=tags)
+#     print(result.text)
+# except Exception as error:
+#     print('Upload failed', error)
+# print("Flickered: %s" % description+" "+tags)
 
 #Instagram Post
 camera = input ("Which camera did you use ?")
@@ -96,14 +96,15 @@ if scan :
 if date :
     date = "🗓️ " + date + ".\n"
 
-text = title + ".\n.\n📷 " + camera + " .\n👁️ " + lens + ".\n" + film + lab + date + ".\n.\n" + description + ".\n.\n" + spplib.hashtagify(tags)
+text = title + ".\n.\n📷 " + camera + ".\n👁️ " + lens + ".\n" + film + lab + date + ".\n.\n" + description + ".\n.\n" + spplib.hashtagify(tags)
 
 cl = Client()
 cl.login(username, password)
+instaimg = spplib.instagramableImg(filepath)
 
 if tag:
-    cl.photo_upload(filepath, text, [Usertag(user=tag, x=0.5, y=0.5)], location=Location(name=location, lat=lat, lng=lng))
+    cl.photo_upload(instaimg, text, [Usertag(user=tag, x=0.5, y=0.5)], location=Location(name=location, lat=lat, lng=lng))
 else :
-    cl.photo_upload(filepath, text, location=Location(name=location, lat=lat, lng=lng))
+    cl.photo_upload(instaimg, text, location=Location(name=location, lat=lat, lng=lng))
 
 print (text)

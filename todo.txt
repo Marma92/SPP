@@ -4,9 +4,10 @@ TODO:
 
 - Improvement : offering to retrieve EXIF infos to add them to description.
 - Improvement : GUI
-- Improvement : Square format for Instagram
 - Improvement : Adding Facebook API handling
+- Cookie handling on instagrapi??
 
+- Improvement : Square format for Instagram. DONE
 - Better cookie gesture for Instagram (to fix connection issues). DONE
 - More try catches. DONE
 - Implementing Instagram's API : DONE
