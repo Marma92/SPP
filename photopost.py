@@ -27,6 +27,7 @@ from instaauth import(
 from instagrapi.types import Usertag, Location
 # Define insta session file path as a variable
 SESSION_FILE = 'insta_session.pkl'
+share_to_fb = True
 
 
 print ("Welcome to the simplephotoposter!")
@@ -119,9 +120,9 @@ instaimg = spplib.instagramableImg(filepath)
 
 # Upload photo with optional user tag and location
 if tag:
-    cl.photo_upload(instaimg, text, [Usertag(user=tag, x=0.5, y=0.5)], location=Location(name=location, lat=lat, lng=lng))
+    cl.photo_upload(instaimg, text, [Usertag(user=tag, x=0.5, y=0.5)], location=Location(name=location, lat=lat, lng=lng), share_to_fb=share_to_fb)
 else:
-    cl.photo_upload(instaimg, text, location=Location(name=location, lat=lat, lng=lng))
+    cl.photo_upload(instaimg, text, location=Location(name=location, lat=lat, lng=lng), share_to_fb=share_to_fb)
 
 # Save session to session file using a context manager
 with open(SESSION_FILE, 'wb') as f:
