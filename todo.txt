@@ -1,9 +1,14 @@
 TODO:
 
-- Better cookie gesture for Instagram (to fix connection issues).
 - Code Cleaning (generic functions needed).
-- More try catches
+
 - Improvement : offering to retrieve EXIF infos to add them to description.
+- Improvement : GUI
+- Improvement : Square format for Instagram
+- Improvement : Adding Facebook API handling
+
+- Better cookie gesture for Instagram (to fix connection issues). DONE
+- More try catches. DONE
 - Implementing Instagram's API : DONE
 - Hashtag conversion (adding # to each word for Twitter and IG) DONE
 - Find a way to do image compression for twitter (to avoid the >5MB error). DONE
