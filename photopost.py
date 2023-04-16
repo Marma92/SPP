@@ -55,24 +55,24 @@ twitter = Twython(
     access_token_secret
 )
 
-# response = twitter.upload_media(media=image)
-# media_id = [response['media_id']]
-# try:
-#     tweet = spplib.tweetable(description+" "+spplib.hashtagify(tags))
-#     twitter.update_status(status=tweet, media_ids=media_id)
-#     print("Tweeted: %s" % tweet)
-# except Exception as error:
-#     print('Tweet failed', error)
+response = twitter.upload_media(media=image)
+media_id = [response['media_id']]
+try:
+    tweet = spplib.tweetable(description+" "+spplib.hashtagify(tags))
+    twitter.update_status(status=tweet, media_ids=media_id)
+    print("Tweeted: %s" % tweet)
+except Exception as error:
+    print('Tweet failed', error)
 
-# #Flickr Post
-# flickr = flickrapi.FlickrAPI(api_key, api_secret)
-# flickr.authenticate_via_browser(perms='delete')
-# try:
-#     result = flickr.upload(filename=filepath, title=title, description=description, tags=tags)
-#     print(result.text)
-# except Exception as error:
-#     print('Upload failed', error)
-# print("Flickered: %s" % description+" "+tags)
+#Flickr Post
+flickr = flickrapi.FlickrAPI(api_key, api_secret)
+flickr.authenticate_via_browser(perms='delete')
+try:
+    result = flickr.upload(filename=filepath, title=title, description=description, tags=tags)
+    print(result.text)
+except Exception as error:
+    print('Upload failed', error)
+print("Flickered: %s" % description+" "+tags)
 
 #Instagram Post
 camera = input ("Which camera did you use ?")
