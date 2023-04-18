@@ -26,9 +26,6 @@ To install all of theses, please type :
 
 _(paste from todo.txt)_
 
-- Image resizing (square form for instagram)
-- Adding Facebook ?
-- Code Cleaning (generic functions needed).
-- More try catches
+- Code Cleaning (generic functions needed, and exception handling).
 - Improvement : offering to retrieve EXIF infos to add them to description.
-
+- Next step : GUI
