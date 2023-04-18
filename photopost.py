@@ -26,7 +26,8 @@ from instaauth import(
     password)
 from instagrapi.types import Usertag, Location
 # Define insta session file path as a variable
-SESSION_FILE = 'insta_session.pkl'
+SESSION_FOLDER = 'sessions/'
+SESSION_FILE = SESSION_FOLDER + 'insta_session.pkl'
 share_to_fb = True
 
 
@@ -102,16 +103,16 @@ if scan :
 if date :
     date = "🗓️ " + date + ".\n"
 
-text = title + ".\n.\n📷 " + camera + ".\n👁️ " + lens + ".\n" + film + lab + date + ".\n.\n" + description + ".\n.\n" + spplib.hashtagify(tags)
+text = title + ".\n.\n📷 " + camera + ".\n👁️ " + lens + ".\n" + film + lab + scan + date + ".\n.\n" + description + ".\n.\n" + spplib.hashtagify(tags)
 
 # Load session from session file using a context manager
-with open(SESSION_FILE, 'rb') as f:
-    try:
+
+try:
+    with open(SESSION_FILE, 'rb') as f:
         cl = pickle.load(f)
-    except Exception as e:
-        print(f"Failed to load session: {e}")
-        cl = Client()
-        cl.save_session(SESSION_FILE)
+except FileNotFoundError:
+    print(f"Session file not found, creating new session.")
+    cl = Client()
 
 # Log in to Instagram
 cl.login(username, password)
@@ -120,13 +121,14 @@ instaimg = spplib.instagramableImg(filepath)
 
 # Upload photo with optional user tag and location
 if tag:
-    cl.photo_upload(instaimg, text, [Usertag(user=tag, x=0.5, y=0.5)], location=Location(name=location, lat=lat, lng=lng), share_to_fb=share_to_fb)
+    cl.photo_upload(instaimg, text, [Usertag(user=tag, x=0.5, y=0.5)], location=Location(name=location, lat=lat, lng=lng))
 else:
-    cl.photo_upload(instaimg, text, location=Location(name=location, lat=lat, lng=lng), share_to_fb=share_to_fb)
+    cl.photo_upload(instaimg, text, location=Location(name=location, lat=lat, lng=lng))
 
 # Save session to session file using a context manager
+try:
+    os.makedirs(SESSION_FOLDER)
+except FileExistsError:
+    pass
 with open(SESSION_FILE, 'wb') as f:
-    try:
-        pickle.dump(cl, f)
-    except Exception as e:
-        print(f"Failed to save session: {e}")
+    pickle.dump(cl, f)
