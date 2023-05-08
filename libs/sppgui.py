@@ -30,9 +30,9 @@ def submit_form():
     scan_value = scan_field.get()
     date_value = date_field.get()
     location_value = location_field.get()
-    instagram_value = instagram_field.get()
-    twitter_value = twitter_field.get()
-    flickr_value = flickr_field.get()
+    instagram_value = instagram_var.get()
+    twitter_value = twitter_var.get()
+    flickr_value = flickr_var.get()
 
     # Do something with the form data, e.g. send it to a server or save it to a file
     print("Title:", title_value)
@@ -130,21 +130,15 @@ location_field.grid(row=9, column=1, padx=5, pady=5, sticky='w')
 
 # instagram_var.get() to get the value of the boolean
 instagram_var = tk.BooleanVar()
-instagram_label = tk.Label(form_frame, text="Instagram", variable=instagram_var)
-instagram_label.grid(row=10, column=1, padx=5, pady=5, sticky='w')
-instagram_field = tk.Checkbutton(form_frame)
+instagram_field = tk.Checkbutton(form_frame, text="Instagram", variable=instagram_var)
 instagram_field.grid(row=10, column=0, padx=5, pady=5, sticky='w')
 
 twitter_var = tk.BooleanVar()
-twitter_label = tk.Label(form_frame, text="Twitter", variable=twitter_var)
-twitter_label.grid(row=11, column=1, padx=5, pady=5, sticky='w')
-twitter_field = tk.Checkbutton(form_frame)
+twitter_field = tk.Checkbutton(form_frame, text="Twitter", variable=twitter_var)
 twitter_field.grid(row=11, column=0, padx=5, pady=5, sticky='w')
 
 flickr_var = tk.BooleanVar()
-flickr_label = tk.Label(form_frame, text="Flickr", variable=flickr_var)
-flickr_label.grid(row=12, column=1, padx=5, pady=5, sticky='w')
-flickr_field = tk.Checkbutton(form_frame)
+flickr_field = tk.Checkbutton(form_frame, text="Flickr", variable=flickr_var)
 flickr_field.grid(row=12, column=0, padx=5, pady=5, sticky='w')
 
 
