@@ -3,6 +3,7 @@ import datetime
 import os
 from PIL import Image
 from resizeimage import resizeimage
+import pickle
 
 #Twitter dependencies
 from twython import Twython
@@ -19,6 +20,16 @@ from auth.flickrauth import (
     api_key,
     api_secret
 )
+
+#Instagram dependencies
+from instagrapi import Client
+from auth.instaauth import(
+    username,
+    password)
+from instagrapi.types import Usertag, Location
+# Define insta session file path as a variable
+SESSION_FOLDER = '../sessions/'
+SESSION_FILE = SESSION_FOLDER + 'insta_session.pkl'
 
 
 def hashtagify(tags):
@@ -130,3 +141,32 @@ def flick_a_pic (filepath, title, description, tags):
   except Exception as error:
       print('Upload failed', error)
   print("Flickered: %s" % description+" "+tags)
+
+
+def insta_post (filepath, text, location, lat, lng, tag ):
+  # Load session from session file using a context manager
+  try:
+      with open(SESSION_FILE, 'rb') as f:
+          cl = pickle.load(f)
+  except FileNotFoundError:
+      print(f"Session file not found, creating new session.")
+      cl = Client()
+
+  # Log in to Instagram
+  cl.login(username, password)
+
+  instaimg = instagramableImg(filepath)
+
+  # Upload photo with optional user tag and location
+  if tag:
+      cl.photo_upload(instaimg, text, [Usertag(user=tag, x=0.5, y=0.5)], location=Location(name=location, lat=lat, lng=lng))
+  else:
+      cl.photo_upload(instaimg, text, location=Location(name=location, lat=lat, lng=lng))
+
+  # Save session to session file using a context manager
+  try:
+      os.makedirs(SESSION_FOLDER)
+  except FileExistsError:
+      pass
+  with open(SESSION_FILE, 'wb') as f:
+      pickle.dump(cl, f)

@@ -1,24 +1,5 @@
 import libs.spplib as spplib
-import os
-import pickle
-
-#Instagram dependencies
-from instagrapi import Client
-from auth.instaauth import(
-    username,
-    password)
-from instagrapi.types import Usertag, Location
-# Define insta session file path as a variable
-SESSION_FOLDER = 'sessions/'
-SESSION_FILE = SESSION_FOLDER + 'insta_session.pkl'
-share_to_fb = True
-
-
 print ("Welcome to the simplephotoposter!")
-#First, we are going to code a simple script to post at 3 different places:
-#Twitter, Flickr, and Instagram
-
-#To do so, we have to :
 
 #chose a file (from a given path)
 filepath = input ("Enter a path for your picture to post:")
@@ -60,31 +41,4 @@ if date :
     date = "🗓️ " + date + ".\n"
 
 text = title + ".\n.\n📷 " + camera + ".\n👁️ " + lens + ".\n" + film + lab + scan + date + ".\n.\n" + description + ".\n.\n" + spplib.hashtagify(tags)
-
-# Load session from session file using a context manager
-
-try:
-    with open(SESSION_FILE, 'rb') as f:
-        cl = pickle.load(f)
-except FileNotFoundError:
-    print(f"Session file not found, creating new session.")
-    cl = Client()
-
-# Log in to Instagram
-cl.login(username, password)
-
-instaimg = spplib.instagramableImg(filepath)
-
-# Upload photo with optional user tag and location
-if tag:
-    cl.photo_upload(instaimg, text, [Usertag(user=tag, x=0.5, y=0.5)], location=Location(name=location, lat=lat, lng=lng))
-else:
-    cl.photo_upload(instaimg, text, location=Location(name=location, lat=lat, lng=lng))
-
-# Save session to session file using a context manager
-try:
-    os.makedirs(SESSION_FOLDER)
-except FileExistsError:
-    pass
-with open(SESSION_FILE, 'wb') as f:
-    pickle.dump(cl, f)
+spplib.insta_post(filepath, text, location, lat, lng, tag)
