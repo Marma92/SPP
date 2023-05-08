@@ -102,3 +102,12 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
+# projects files and folders
+/instagram
+/replays
+/resizes
+/sessions
+flickrauth.py
+instaauth.py
+twitterauth.py
