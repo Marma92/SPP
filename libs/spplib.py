@@ -110,7 +110,7 @@ def instagramableImg(filepath):
         return None
 
 
-def tweet_a_pic (filepath, description, tags):
+def tweet_a_pic (filepath, text):
   #Twitter Post
   twitter = Twython(
       consumer_key,
@@ -124,7 +124,7 @@ def tweet_a_pic (filepath, description, tags):
   response = twitter.upload_media(media=image)
   media_id = [response['media_id']]
   try:
-      tweet = tweetable(description+" "+hashtagify(tags))
+      tweet = tweetable(text)
       twitter.update_status(status=tweet, media_ids=media_id)
       print("Tweeted: %s" % tweet)
   except Exception as error:
