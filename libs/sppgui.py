@@ -30,6 +30,9 @@ def submit_form():
     scan_value = scan_field.get()
     date_value = date_field.get()
     location_value = location_field.get()
+    instagram_value = instagram_field.get()
+    twitter_value = twitter_field.get()
+    flickr_value = flickr_field.get()
 
     # Do something with the form data, e.g. send it to a server or save it to a file
     print("Title:", title_value)
@@ -125,9 +128,25 @@ location_label.grid(row=9, column=0, padx=5, pady=5, sticky='w')
 location_field = tk.Entry(form_frame)
 location_field.grid(row=9, column=1, padx=5, pady=5, sticky='w')
 
+instagram_label = tk.Label(form_frame, text="Instagram")
+instagram_label.grid(row=10, column=1, padx=5, pady=5, sticky='w')
+instagram_field = tk.Checkbutton(form_frame)
+instagram_field.grid(row=10, column=0, padx=5, pady=5, sticky='w')
+
+twitter_label = tk.Label(form_frame, text="Twitter")
+twitter_label.grid(row=11, column=1, padx=5, pady=5, sticky='w')
+twitter_field = tk.Checkbutton(form_frame)
+twitter_field.grid(row=11, column=0, padx=5, pady=5, sticky='w')
+
+flickr_label = tk.Label(form_frame, text="Flickr")
+flickr_label.grid(row=12, column=1, padx=5, pady=5, sticky='w')
+flickr_field = tk.Checkbutton(form_frame)
+flickr_field.grid(row=12, column=0, padx=5, pady=5, sticky='w')
+
+
 # Add a "Submit" button
 submit_button = tk.Button(form_frame, text="Submit", command=submit_form)
-submit_button.grid(row=12, column=1, padx=5, pady=5, sticky='e')
+submit_button.grid(row=13, column=1, padx=5, pady=5, sticky='e')
 
 # Start the Tkinter event loop
 root.mainloop()
