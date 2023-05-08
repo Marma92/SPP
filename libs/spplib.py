@@ -12,7 +12,7 @@ def hashtagify(tags):
 
 def tweetable(tweet):
     if len(tweet) > 280:
-        print ("This tweet is %d carachters. Shortening..." % len(tweet))
+        print ("This tweet is %d characters. Shortening..." % len(tweet))
         tweet = tweet[:277]+"..."
     return tweet
 
