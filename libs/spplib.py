@@ -13,6 +13,13 @@ from auth.twitterauth import (
     access_token_secret
 )
 
+#Flickr dependencies
+import flickrapi
+from auth.flickrauth import (
+    api_key,
+    api_secret
+)
+
 
 def hashtagify(tags):
     result = re.sub(r'(\w+)', r'#\1', tags)
@@ -111,3 +118,15 @@ def tweet_a_pic (filepath, description, tags):
       print("Tweeted: %s" % tweet)
   except Exception as error:
       print('Tweet failed', error)
+
+
+def flick_a_pic (filepath, title, description, tags):
+  #Flickr Post
+  flickr = flickrapi.FlickrAPI(api_key, api_secret)
+  flickr.authenticate_via_browser(perms='delete')
+  try:
+      result = flickr.upload(filename=filepath, title=title, description=description, tags=tags)
+      print(result.text)
+  except Exception as error:
+      print('Upload failed', error)
+  print("Flickered: %s" % description+" "+tags)

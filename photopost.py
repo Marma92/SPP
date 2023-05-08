@@ -2,14 +2,6 @@ import libs.spplib as spplib
 import os
 import pickle
 
-
-#Flickr dependencies
-import flickrapi
-from auth.flickrauth import (
-    api_key,
-    api_secret
-)
-
 #Instagram dependencies
 from instagrapi import Client
 from auth.instaauth import(
@@ -43,16 +35,7 @@ tags = input ("Give it now some tags:")
 #POST
 print ("And here ya go!")
 spplib.tweet_a_pic(filepath, description, tags)
-
-#Flickr Post
-flickr = flickrapi.FlickrAPI(api_key, api_secret)
-flickr.authenticate_via_browser(perms='delete')
-try:
-    result = flickr.upload(filename=filepath, title=title, description=description, tags=tags)
-    print(result.text)
-except Exception as error:
-    print('Upload failed', error)
-print("Flickered: %s" % description+" "+tags)
+spplib.flick_a_pic(filepath, title, description, tags)
 
 #Instagram Post
 camera = input ("Which camera did you use ?")
