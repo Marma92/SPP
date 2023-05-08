@@ -51,18 +51,18 @@ root = tk.Tk()
 root.title("File Upload")
 
 # Set the dimensions of the window to 1000x480 pixels
-root.geometry("640x480")
+root.geometry("640x640")
 
 # Add a label to display the preview image
 image = Image.new('RGB', (320, 320), 'white')  # Create a white image with the same size as the preview image
 photo = ImageTk.PhotoImage(image)
 image_label = tk.Label(root, image=photo)
 image_label.image = photo
-image_label.grid(row=0, column=0, padx=10, pady=10, sticky='w')
+image_label.grid(row=0, column=0, padx=20, pady=0, sticky='w')
 
 # Add an "Upload" button
 upload_button = tk.Button(root, text="Upload", command=upload_file)
-upload_button.grid(row=1, column=0, pady=10, sticky='n', padx=10)
+upload_button.grid(row=1, column=0, pady=0,  padx=0, sticky='n')
 
 # Add a form to the right of the preview image
 form_frame = tk.Frame(root)
