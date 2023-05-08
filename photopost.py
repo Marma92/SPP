@@ -5,7 +5,7 @@ import pickle
 
 #Twitter dependencies
 from twython import Twython
-from twitterauth import (
+from auth.twitterauth import (
     consumer_key,
     consumer_secret,
     access_token,
@@ -14,14 +14,14 @@ from twitterauth import (
 
 #Flickr dependencies
 import flickrapi
-from flickrauth import (
+from auth.flickrauth import (
     api_key,
     api_secret
 )
 
 #Instagram dependencies
 from instagrapi import Client
-from instaauth import(
+from auth.instaauth import(
     username,
     password)
 from instagrapi.types import Usertag, Location
