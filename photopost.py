@@ -31,14 +31,5 @@ if location :
     lng = input ("Longitude ?")
 tag = input ("Someone to tag? (leave blank if not)")
 
-if film :
-    film = "🎞️ " + film + ".\n"
-if lab :
-    lab = "🧪 " + lab + ".\n"
-if scan :
-    scan = "💿 " + scan + ".\n"
-if date :
-    date = "🗓️ " + date + ".\n"
-
-text = title + ".\n.\n📷 " + camera + ".\n👁️ " + lens + ".\n" + film + lab + scan + date + ".\n.\n" + description + ".\n.\n" + spplib.hashtagify(tags)
+text = spplib.text_formation(title, description, tags, camera, lens, film, lab, scan, date)
 spplib.insta_post(filepath, text, location, lat, lng, tag)
