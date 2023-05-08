@@ -4,6 +4,15 @@ import os
 from PIL import Image
 from resizeimage import resizeimage
 
+#Twitter dependencies
+from twython import Twython
+from auth.twitterauth import (
+    consumer_key,
+    consumer_secret,
+    access_token,
+    access_token_secret
+)
+
 
 def hashtagify(tags):
     result = re.sub(r'(\w+)', r'#\1', tags)
@@ -81,3 +90,24 @@ def instagramableImg(filepath):
     except Exception as e:
         print("Error processing image:", e)
         return None
+
+
+def tweet_a_pic (filepath, description, tags):
+  #Twitter Post
+  twitter = Twython(
+      consumer_key,
+      consumer_secret,
+      access_token,
+      access_token_secret
+  )
+
+  tweetpath = tweetableImg(filepath)
+  image = open(tweetpath, 'rb')
+  response = twitter.upload_media(media=image)
+  media_id = [response['media_id']]
+  try:
+      tweet = tweetable(description+" "+hashtagify(tags))
+      twitter.update_status(status=tweet, media_ids=media_id)
+      print("Tweeted: %s" % tweet)
+  except Exception as error:
+      print('Tweet failed', error)

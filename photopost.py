@@ -3,15 +3,6 @@ import os
 import pickle
 
 
-#Twitter dependencies
-from twython import Twython
-from auth.twitterauth import (
-    consumer_key,
-    consumer_secret,
-    access_token,
-    access_token_secret
-)
-
 #Flickr dependencies
 import flickrapi
 from auth.flickrauth import (
@@ -39,8 +30,6 @@ print ("Welcome to the simplephotoposter!")
 
 #chose a file (from a given path)
 filepath = input ("Enter a path for your picture to post:")
-tweetpath = spplib.tweetableImg(filepath)
-image = open(tweetpath, 'rb')
 
 #give it a title
 title = input ("Give a title to your picture:")
@@ -53,23 +42,7 @@ tags = input ("Give it now some tags:")
 
 #POST
 print ("And here ya go!")
-
-#Twitter Post
-twitter = Twython(
-    consumer_key,
-    consumer_secret,
-    access_token,
-    access_token_secret
-)
-
-response = twitter.upload_media(media=image)
-media_id = [response['media_id']]
-try:
-    tweet = spplib.tweetable(description+" "+spplib.hashtagify(tags))
-    twitter.update_status(status=tweet, media_ids=media_id)
-    print("Tweeted: %s" % tweet)
-except Exception as error:
-    print('Tweet failed', error)
+spplib.tweet_a_pic(filepath, description, tags)
 
 #Flickr Post
 flickr = flickrapi.FlickrAPI(api_key, api_secret)
