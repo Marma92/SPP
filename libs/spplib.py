@@ -4,6 +4,7 @@ import os
 from PIL import Image
 from resizeimage import resizeimage
 import pickle
+import unicodedata
 
 #Twitter dependencies
 from twython import Twython
@@ -38,9 +39,12 @@ def hashtagify(tags):
 
 
 def tweetable(tweet):
-    if len(tweet) > 280:
-        print ("This tweet is %d characters. Shortening..." % len(tweet))
-        tweet = tweet[:277]+"..."
+    tweet = unicodedata.normalize('NFC', tweet)  # Normalize string to NFC format
+    tweet_length = len(tweet.encode('utf-8'))  # Get encoded length of tweet
+    if tweet_length > 280:
+        print("This tweet is %d bytes. Shortening..." % tweet_length)
+        tweet = tweet[:274] + '…'  # Truncate and add ellipsis
+        tweet_length = len(tweet.encode('utf-8'))  # Recalculate encoded length
     return tweet
 
 def tweetableImg(filepath):

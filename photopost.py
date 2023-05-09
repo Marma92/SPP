@@ -29,6 +29,7 @@ text = spplib.text_formation(title, description, tags, camera, lens, film, lab, 
 
 #POST
 print ("And here ya go!")
-spplib.tweet_a_pic(filepath, text)
+
+spplib.tweet_a_pic(filepath, spplib.tweetable(text))
 spplib.flick_a_pic(filepath, title, text, tags)
 spplib.insta_post(filepath, text, location, lat, lng, tag)
