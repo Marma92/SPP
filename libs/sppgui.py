@@ -45,6 +45,9 @@ def submit_form():
     print("Scan:", scan_value)
     print("Date:", date_value)
     print("Location:", location_value)
+    print("Instagram post:", instagram_value)
+    print("Twitter post:", twitter_value)
+    print("Flickr post:", flickr_value)
 
 # Create the main window
 root = tk.Tk()
