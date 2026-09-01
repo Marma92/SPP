@@ -1,190 +1,137 @@
+"""Text formatting and the per-platform posting functions.
+
+Platform clients are imported lazily, inside the function that needs them, so
+that importing this module (or running the image pipeline) does not require
+every library to be installed.
+"""
+
 import re
-import datetime
-import os
-from PIL import Image
-from resizeimage import resizeimage
-import pickle
 import unicodedata
 
-#Twitter dependencies
-from twython import Twython
-from auth.twitterauth import (
-    consumer_key,
-    consumer_secret,
-    access_token,
-    access_token_secret
-)
+from libs import config
+from libs.images import prepare_for_instagram, prepare_for_twitter
 
-#Flickr dependencies
-import flickrapi
-from auth.flickrauth import (
-    api_key,
-    api_secret
-)
-
-#Instagram dependencies
-from instagrapi import Client
-from auth.instaauth import(
-    username,
-    password)
-from instagrapi.types import Usertag, Location
-# Define insta session file path as a variable
-SESSION_FOLDER = '../sessions/'
-SESSION_FILE = SESSION_FOLDER + 'insta_session.pkl'
+TWEET_MAX_WEIGHT = 280
+ELLIPSIS = "…"
 
 
 def hashtagify(tags):
-    result = re.sub(r'(\w+)', r'#\1', tags)
-    return result
+    """Turn a loose list of words into hashtags, leaving existing ones alone."""
+    return re.sub(r"#?(\w+)", r"#\1", tags)
+
+
+def _weighted_length(text):
+    """Approximate Twitter's own count: CJK and emoji weigh 2, the rest 1.
+
+    The previous version counted UTF-8 bytes, which charges 7 for a single
+    emoji -- captions like ours got truncated at roughly half their real length.
+    """
+    return sum(1 if ord(char) < 0x1100 else 2 for char in text)
 
 
 def tweetable(tweet):
-    tweet = unicodedata.normalize('NFC', tweet)  # Normalize string to NFC format
-    tweet_length = len(tweet.encode('utf-8'))  # Get encoded length of tweet
-    if tweet_length > 280:
-        print("This tweet is %d bytes. Shortening..." % tweet_length)
-        tweet = tweet[:274] + '…'  # Truncate and add ellipsis
-        tweet_length = len(tweet.encode('utf-8'))  # Recalculate encoded length
-    return tweet
+    tweet = unicodedata.normalize("NFC", tweet)
+    if _weighted_length(tweet) <= TWEET_MAX_WEIGHT:
+        return tweet
 
-def tweetableImg(filepath):
-    print ("Resizing for a more twitter-friendly format")
-    img = open(filepath, 'rb')
-    image = Image.open(img)
-    image = resizeimage.resize_thumbnail(image, [2048, 2048])
-    imagePath = "./resizes/"+datetime.datetime.now().strftime('%Y%m%d%H%M%S%f')+".jpeg"
-    image.save(imagePath, image.format)
-    return imagePath
-
-
-def instagramableImg(filepath):
-    try:
-        # Open image file
-        img = open(filepath, 'rb')
-        with Image.open(img) as image:
-            # Validate image format
-            if image.format not in ['JPEG', 'PNG', 'BMP']:
-                raise ValueError("Invalid image format. Only JPEG, PNG, and BMP formats are supported.")
-
-            # Set target width and height
-            width = 1440
-            height = 1440
-
-            # Calculate aspect ratios
-            ratio_w = width / image.width
-            ratio_h = height / image.height
-
-            # Determine resize dimensions
-            if ratio_w < ratio_h:
-                # Fixed by width
-                resize_width = width
-                resize_height = round(ratio_w * image.height)
-            else:
-                # Fixed by height
-                resize_width = round(ratio_h * image.width)
-                resize_height = height
-
-            # Resize image
-            image_resize = image.resize((resize_width, resize_height), Image.ANTIALIAS)
-
-            # Create background image
-            background = Image.new('RGBA', (width, height), (255, 255, 255, 255))
-
-            # Calculate offset for centering
-            offset = (round((width - resize_width) / 2), round((height - resize_height) / 2))
-
-            # Paste resized image onto background
-            background.paste(image_resize, offset)
-
-            # Convert background image to RGB mode
-            rgb_result = background.convert('RGB')
-
-            # Generate file path for saved image
-            image_dir = "./instagram/"
-            os.makedirs(image_dir, exist_ok=True)
-            image_name = datetime.datetime.now().strftime('%Y%m%d%H%M%S%f') + ".jpeg"
-            imagePath = os.path.join(image_dir, image_name)
-
-            # Save image
-            rgb_result.save(imagePath)
-            return imagePath
-
-    except Exception as e:
-        print("Error processing image:", e)
-        return None
-
-
-def tweet_a_pic (filepath, text):
-  #Twitter Post
-  twitter = Twython(
-      consumer_key,
-      consumer_secret,
-      access_token,
-      access_token_secret
-  )
-
-  tweetpath = tweetableImg(filepath)
-  image = open(tweetpath, 'rb')
-  response = twitter.upload_media(media=image)
-  media_id = [response['media_id']]
-  try:
-      tweet = tweetable(text)
-      twitter.update_status(status=tweet, media_ids=media_id)
-      print("Tweeted: %s" % tweet)
-  except Exception as error:
-      print('Tweet failed', error)
-
-
-def flick_a_pic (filepath, title, description, tags):
-  #Flickr Post
-  flickr = flickrapi.FlickrAPI(api_key, api_secret)
-  flickr.authenticate_via_browser(perms='delete')
-  try:
-      result = flickr.upload(filename=filepath, title=title, description=description, tags=tags)
-      print(result.text)
-  except Exception as error:
-      print('Upload failed', error)
-  print("Flickered: %s" % description+" "+tags)
-
-
-def insta_post (filepath, text, location, lat, lng, tag ):
-  # Load session from session file using a context manager
-  try:
-      with open(SESSION_FILE, 'rb') as f:
-          cl = pickle.load(f)
-  except FileNotFoundError:
-      print(f"Session file not found, creating new session.")
-      cl = Client()
-
-  # Log in to Instagram
-  cl.login(username, password)
-
-  instaimg = instagramableImg(filepath)
-
-  # Upload photo with optional user tag and location
-  if tag:
-      cl.photo_upload(instaimg, text, [Usertag(user=tag, x=0.5, y=0.5)], location=Location(name=location, lat=lat, lng=lng))
-  else:
-      cl.photo_upload(instaimg, text, location=Location(name=location, lat=lat, lng=lng))
-
-  # Save session to session file using a context manager
-  try:
-      os.makedirs(SESSION_FOLDER)
-  except FileExistsError:
-      pass
-  with open(SESSION_FILE, 'wb') as f:
-      pickle.dump(cl, f)
+    print("This tweet weighs %d units. Shortening..." % _weighted_length(tweet))
+    budget = TWEET_MAX_WEIGHT - _weighted_length(ELLIPSIS)
+    cut = 0
+    used = 0
+    for index, char in enumerate(tweet):
+        used += 1 if ord(char) < 0x1100 else 2
+        if used > budget:
+            break
+        cut = index + 1
+    return tweet[:cut].rstrip() + ELLIPSIS
 
 
 def text_formation(title, description, tags, camera, lens, film, lab, scan, date):
-  if film :
-    film = "🎞️ " + film + ".\n"
-  if lab :
-    lab = "🧪 " + lab + ".\n"
-  if scan :
-    scan = "💿 " + scan + ".\n"
-  if date :
-    date = "🗓️ " + date + ".\n"
+    if film:
+        film = "🎞️ " + film + ".\n"
+    if lab:
+        lab = "🧪 " + lab + ".\n"
+    if scan:
+        scan = "💿 " + scan + ".\n"
+    if date:
+        date = "🗓️ " + date + ".\n"
 
-  text = title + ".\n.\n📷 " + camera + ".\n👁️ " + lens + ".\n" + film + lab + scan + date + ".\n.\n" + description + ".\n.\n" + hashtagify(tags)
-  return text
+    return (
+        title + ".\n.\n📷 " + camera + ".\n👁️ " + lens + ".\n"
+        + film + lab + scan + date
+        + ".\n.\n" + description + ".\n.\n" + hashtagify(tags)
+    )
+
+
+def tweet_a_pic(filepath, text):
+    """Post to Twitter/X.
+
+    NOTE: this still goes through Twython and `update_status`, i.e. API v1.1,
+    which was shut down in 2023. It will fail until it is ported to the v2 API.
+    """
+    from twython import Twython
+
+    auth = config.TwitterAuth.load()
+    twitter = Twython(
+        auth.consumer_key,
+        auth.consumer_secret,
+        auth.access_token,
+        auth.access_token_secret,
+    )
+
+    tweet = tweetable(text)
+    with open(prepare_for_twitter(filepath), "rb") as image:
+        response = twitter.upload_media(media=image)
+    twitter.update_status(status=tweet, media_ids=[response["media_id"]])
+    print("Tweeted: %s" % tweet)
+
+
+def flick_a_pic(filepath, title, description, tags):
+    import flickrapi
+
+    auth = config.FlickrAuth.load()
+    flickr = flickrapi.FlickrAPI(auth.api_key, auth.api_secret)
+    # flickrapi caches the OAuth token, so the browser only opens the first time.
+    if not flickr.token_valid(perms="delete"):
+        flickr.authenticate_via_browser(perms="delete")
+
+    result = flickr.upload(
+        filename=str(filepath), title=title, description=description, tags=tags
+    )
+    print("Flickered: %s" % result.find("photoid").text)
+
+
+def insta_post(filepath, text, location_name="", lat=None, lng=None, tag=""):
+    from instagrapi import Client
+    from instagrapi.types import Location, Usertag
+
+    auth = config.InstagramAuth.load()
+
+    # instagrapi's own JSON settings, instead of pickling the whole client:
+    # a pickle breaks on every library upgrade.
+    client = Client()
+    if config.INSTAGRAM_SESSION_FILE.exists():
+        client.load_settings(config.INSTAGRAM_SESSION_FILE)
+    client.login(auth.username, auth.password)
+
+    location = None
+    if location_name:
+        location = Location(
+            name=location_name,
+            lat=float(lat) if lat else None,
+            lng=float(lng) if lng else None,
+        )
+
+    usertags = []
+    if tag:
+        # photo_upload wants a user object, not a username string.
+        usertags = [Usertag(user=client.user_info_by_username(tag.lstrip("@")), x=0.5, y=0.5)]
+
+    try:
+        client.photo_upload(
+            prepare_for_instagram(filepath), text, usertags=usertags, location=location
+        )
+        print("Instagrammed: %s" % text.splitlines()[0])
+    finally:
+        config.SESSION_DIR.mkdir(parents=True, exist_ok=True)
+        client.dump_settings(config.INSTAGRAM_SESSION_FILE)

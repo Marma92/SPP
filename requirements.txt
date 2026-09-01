@@ -1,0 +1,8 @@
+# Core
+pillow>=10.1          # replaces python-resize-image (unmaintained since 2018)
+python-dotenv>=1.0
+
+# Platforms
+flickrapi>=2.4
+instagrapi>=2.1
+twython>=3.9          # Twitter API v1.1 -- dead since 2023, see README
