@@ -37,6 +37,13 @@ sets a narrower default, and `--platforms` overrides both. A platform that
 fails is reported in the summary without stopping the others, and the exit
 code is non-zero if any of them failed.
 
+### Metadata ###
+
+Camera, lens, capture date and GPS coordinates are read from the picture's
+EXIF and proposed as defaults: press enter to keep one, type over it to
+replace it. A film scan usually carries none of this, in which case the
+questions are simply asked empty, as before.
+
 ### Adding a platform ###
 
 One module in `libs/publishers/` implementing `credentials`, `prepare` and
@@ -59,5 +66,4 @@ reviving on the v2 API.
 _(paste from todo.txt)_
 
 - More platforms: Mastodon, Pixelfed.
-- Read EXIF to prefill camera, lens and date.
 - GUI (`libs/sppgui.py` is a skeleton, not wired to anything yet).
