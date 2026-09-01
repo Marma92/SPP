@@ -104,6 +104,9 @@ class BlueskyPublisher(Publisher):
             image_aspect_ratio=models.AppBskyEmbedDefs.AspectRatio(
                 width=width, height=height
             ),
+            # Without this the SDK declares English, and a French caption gets
+            # filtered out or offered for translation.
+            langs=config.POST_LANGS,
         )
 
         config.SESSION_DIR.mkdir(parents=True, exist_ok=True)

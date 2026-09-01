@@ -29,6 +29,10 @@ load_dotenv(PROJECT_ROOT / ".env")
 # Optional default platform selection, e.g. SPP_PLATFORMS=flickr,instagram
 DEFAULT_PLATFORMS = os.getenv("SPP_PLATFORMS", "")
 
+# Language the captions are written in, declared to the platforms that ask
+# for it. Bluesky filters and offers translation on this.
+POST_LANGS = [code.strip() for code in os.getenv("SPP_LANGS", "fr").split(",") if code.strip()]
+
 
 class MissingCredentials(RuntimeError):
     """Raised when a platform is asked to post without being configured."""
