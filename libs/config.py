@@ -24,6 +24,9 @@ INSTAGRAM_SESSION_FILE = SESSION_DIR / "instagram_session.json"
 
 load_dotenv(PROJECT_ROOT / ".env")
 
+# Optional default platform selection, e.g. SPP_PLATFORMS=flickr,instagram
+DEFAULT_PLATFORMS = os.getenv("SPP_PLATFORMS", "")
+
 
 class MissingCredentials(RuntimeError):
     """Raised when a platform is asked to post without being configured."""

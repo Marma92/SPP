@@ -27,8 +27,20 @@ with a clear message instead of crashing the run.
 ### To use it ###
 
 ```
-python photopost.py
+python photopost.py                          # asks for the picture, posts everywhere
+python photopost.py shot.jpg --dry-run       # prepares and shows, posts nothing
+python photopost.py shot.jpg -p flickr,instagram
 ```
+
+By default it posts to every platform configured in `.env`; `SPP_PLATFORMS`
+sets a narrower default, and `--platforms` overrides both. A platform that
+fails is reported in the summary without stopping the others, and the exit
+code is non-zero if any of them failed.
+
+### Adding a platform ###
+
+One module in `libs/publishers/` implementing `credentials`, `prepare` and
+`publish`, listed in `libs/publishers/__init__.py`. Nothing else changes.
 
 ### Platform status ###
 
@@ -43,6 +55,5 @@ python photopost.py
 _(paste from todo.txt)_
 
 - Port Twitter to the v2 API, or replace it (Bluesky, Mastodon, Pixelfed).
-- Per-platform selection instead of all-or-nothing.
 - Read EXIF to prefill camera, lens and date.
 - GUI (`libs/sppgui.py` is a skeleton, not wired to anything yet).

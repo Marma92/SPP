@@ -1,9 +1,12 @@
 TODO:
 
-- Code Cleaning (generic functions needed).
+- Code Cleaning (generic functions needed). DONE
 
 - Improvement : offering to retrieve EXIF infos to add them to description.
 - Improvement : GUI
+- Port Twitter to API v2, or replace it (Bluesky, Mastodon, Pixelfed).
+
+- Publisher interface + platform selection + dry run. DONE
 
 
 - Improvement : Adding post on Facebook DONE
