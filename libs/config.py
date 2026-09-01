@@ -19,8 +19,10 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 # around (the session file was even written to `../sessions/`).
 RESIZE_DIR = PROJECT_ROOT / "resizes"
 INSTAGRAM_DIR = PROJECT_ROOT / "instagram"
+BLUESKY_DIR = PROJECT_ROOT / "bluesky"
 SESSION_DIR = PROJECT_ROOT / "sessions"
 INSTAGRAM_SESSION_FILE = SESSION_DIR / "instagram_session.json"
+BLUESKY_SESSION_FILE = SESSION_DIR / "bluesky_session.txt"
 
 load_dotenv(PROJECT_ROOT / ".env")
 
@@ -44,24 +46,6 @@ def _require(platform, *names):
 
 
 @dataclass(frozen=True)
-class TwitterAuth:
-    consumer_key: str
-    consumer_secret: str
-    access_token: str
-    access_token_secret: str
-
-    @classmethod
-    def load(cls):
-        return cls(*_require(
-            "Twitter",
-            "TWITTER_CONSUMER_KEY",
-            "TWITTER_CONSUMER_SECRET",
-            "TWITTER_ACCESS_TOKEN",
-            "TWITTER_ACCESS_TOKEN_SECRET",
-        ))
-
-
-@dataclass(frozen=True)
 class FlickrAuth:
     api_key: str
     api_secret: str
@@ -79,3 +63,13 @@ class InstagramAuth:
     @classmethod
     def load(cls):
         return cls(*_require("Instagram", "INSTAGRAM_USERNAME", "INSTAGRAM_PASSWORD"))
+
+
+@dataclass(frozen=True)
+class BlueskyAuth:
+    handle: str
+    app_password: str
+
+    @classmethod
+    def load(cls):
+        return cls(*_require("Bluesky", "BLUESKY_HANDLE", "BLUESKY_APP_PASSWORD"))

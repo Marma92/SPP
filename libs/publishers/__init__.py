@@ -1,11 +1,11 @@
 """Registry of the available platforms."""
 
 from libs.publishers.base import Prepared, Publisher, Result
+from libs.publishers.bluesky import BlueskyPublisher
 from libs.publishers.flickr import FlickrPublisher
 from libs.publishers.instagram import InstagramPublisher
-from libs.publishers.twitter import TwitterPublisher
 
-ALL = (FlickrPublisher, InstagramPublisher, TwitterPublisher)
+ALL = (FlickrPublisher, InstagramPublisher, BlueskyPublisher)
 NAMES = tuple(cls.name for cls in ALL)
 
 

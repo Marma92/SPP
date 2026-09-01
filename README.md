@@ -44,16 +44,20 @@ One module in `libs/publishers/` implementing `credentials`, `prepare` and
 
 ### Platform status ###
 
-| Platform  | State | Notes |
-|-----------|-------|-------|
-| Flickr    | works | OAuth token is cached, the browser only opens the first time |
-| Instagram | works | via `instagrapi`, i.e. the private mobile API (no official key for personal accounts) |
-| Twitter/X | **broken** | still on Twython / API v1.1, shut down in 2023; needs a port to the v2 API |
+| Platform  | Credentials | Notes |
+|-----------|-------------|-------|
+| Flickr    | API key + secret | OAuth token is cached, the browser only opens the first time |
+| Instagram | handle + password | via `instagrapi`, i.e. the private mobile API (no official key for personal accounts) |
+| Bluesky   | handle + app password | full-frame picture, clickable hashtags, alt text |
+
+Twitter/X was dropped: it sat on API v1.1, shut down in 2023. The publisher is
+still in the history (`git log -- libs/publishers/twitter.py`) if it ever needs
+reviving on the v2 API.
 
 ### TODO ###
 
 _(paste from todo.txt)_
 
-- Port Twitter to the v2 API, or replace it (Bluesky, Mastodon, Pixelfed).
+- More platforms: Mastodon, Pixelfed.
 - Read EXIF to prefill camera, lens and date.
 - GUI (`libs/sppgui.py` is a skeleton, not wired to anything yet).

@@ -10,13 +10,17 @@ import datetime
 
 from PIL import Image, ImageOps
 
-from libs.config import INSTAGRAM_DIR, RESIZE_DIR
+from libs.config import BLUESKY_DIR, INSTAGRAM_DIR, RESIZE_DIR
 
 SUPPORTED_FORMATS = {"JPEG", "PNG", "BMP", "TIFF", "WEBP"}
 
 TWITTER_MAX_EDGE = 2048
 TWITTER_MAX_BYTES = 5 * 1024 * 1024
 INSTAGRAM_SIDE = 1440
+
+# Bluesky rejects any blob over 1,000,000 bytes.
+BLUESKY_MAX_EDGE = 2000
+BLUESKY_MAX_BYTES = 976 * 1024
 
 # Quality ladder walked down until a JPEG fits under the platform's size cap.
 QUALITY_STEPS = (95, 90, 85, 78, 70, 60)
@@ -47,12 +51,28 @@ def _target_path(directory):
     return directory / (datetime.datetime.now().strftime("%Y%m%d%H%M%S%f") + ".jpeg")
 
 
-def _save_jpeg(image, target, max_bytes=None):
-    for quality in QUALITY_STEPS:
+def _encode(image, target, quality):
+    try:
         image.save(target, "JPEG", quality=quality, subsampling=0, optimize=True)
-        if max_bytes is None or target.stat().st_size <= max_bytes:
-            break
-    return target
+    except OSError:
+        # libjpeg's optimisation pass wants the whole frame in a buffer that
+        # Pillow sizes by guesswork; a very detailed scan overflows it and
+        # raises "broken data stream". Optimising only saves a few percent.
+        image.save(target, "JPEG", quality=quality, subsampling=0, optimize=False)
+
+
+def _save_jpeg(image, target, max_bytes=None):
+    """Save as JPEG, trading quality then resolution to fit under max_bytes."""
+    for _ in range(6):
+        for quality in QUALITY_STEPS:
+            _encode(image, target, quality)
+            if max_bytes is None or target.stat().st_size <= max_bytes:
+                return target
+        # Quality alone was not enough: give up some resolution and retry.
+        image = _fit(image, round(image.width * 0.8), round(image.height * 0.8))
+    raise ValueError(
+        "cannot compress %s under %d bytes" % (target.name, max_bytes)
+    )
 
 
 def prepare_for_twitter(filepath):
@@ -70,3 +90,11 @@ def prepare_for_instagram(filepath):
     offset = ((INSTAGRAM_SIDE - image.width) // 2, (INSTAGRAM_SIDE - image.height) // 2)
     canvas.paste(image, offset)
     return _save_jpeg(canvas, _target_path(INSTAGRAM_DIR))
+
+
+def prepare_for_bluesky(filepath):
+    """Shrink to 2000px on the long edge and under Bluesky's 1MB blob limit."""
+    image = _load(filepath)
+    if max(image.size) > BLUESKY_MAX_EDGE:
+        image = _fit(image, BLUESKY_MAX_EDGE, BLUESKY_MAX_EDGE)
+    return _save_jpeg(image, _target_path(BLUESKY_DIR), BLUESKY_MAX_BYTES)

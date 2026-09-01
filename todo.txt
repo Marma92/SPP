@@ -4,7 +4,9 @@ TODO:
 
 - Improvement : offering to retrieve EXIF infos to add them to description.
 - Improvement : GUI
-- Port Twitter to API v2, or replace it (Bluesky, Mastodon, Pixelfed).
+- More platforms : Mastodon, Pixelfed.
+
+- Replacing Twitter with Bluesky. DONE
 
 - Publisher interface + platform selection + dry run. DONE
 

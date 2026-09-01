@@ -22,6 +22,7 @@ def collect(picture=None):
 
     post.title = ask("Give a title to your picture: ")
     post.description = ask("Give a legend to your picture: ")
+    post.alt = ask("Describe the picture for screen readers? (blank = reuse the legend) ")
     post.tags = ask("Give it now some tags: ")
 
     post.camera = ask("Which camera did you use ? ")

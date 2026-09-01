@@ -36,6 +36,7 @@ class Post:
     filepath: Path
     title: str = ""
     description: str = ""
+    alt: str = ""
     tags: str = ""
     camera: str = ""
     lens: str = ""

@@ -5,4 +5,4 @@ python-dotenv>=1.0
 # Platforms
 flickrapi>=2.4
 instagrapi>=2.1
-twython>=3.9          # Twitter API v1.1 -- dead since 2023, see README
+atproto>=0.0.61       # Bluesky

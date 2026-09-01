@@ -105,6 +105,7 @@ venv.bak/
 
 # projects files and folders
 /instagram
+/bluesky
 /replays
 /resizes
 /sessions
