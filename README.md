@@ -137,13 +137,45 @@ Cookies → instagram.com → sessionid) and it is used instead of the password.
 Treat it as a credential: it expires, and logging that browser out revokes it.
 Use the same machine and connection as the browser.
 
-## Still to come
+## Roadmap
 
-- a queue: prepare several pictures, publish them in one go
-- named presets, beside the values carried over from the last post
-- scheduled posts
-- more platforms: Mastodon, Pixelfed
-- posting to Facebook
+### More platforms
+
+- **Twitter/X, back on API v2.** The v1.1 publisher is still in the history
+  (`git log --full-history -- libs/publishers/twitter.py`), along with its weighted character
+  count, so this is a port to `tweepy`'s `create_tweet` rather than a rewrite.
+  It needs a developer account, and the free tier is write-only and capped —
+  worth checking the current terms before counting on it.
+- **Mastodon and Pixelfed.** Documented public APIs, no application to file:
+  the cheapest platforms left to add.
+- **Facebook.** Wanted since the very first todo list, never actually wired up.
+
+### Publishing
+
+- **Retry a single platform from its row.** When one fails, the run dialog
+  still holds everything needed to try again — the post, and the picture
+  already prepared. A Retry button on that row, instead of a dead end and a
+  full recompose.
+- **A queue.** Prepare several pictures, then publish them in one go, rather
+  than one window session per photograph.
+- **Scheduled posts.** Compose now, publish at a chosen time.
+
+### Composing a post
+
+- **Remember what has been typed, and suggest it back.** Every camera, lens,
+  film, lab and scanner ever entered goes into a list that survives closing the
+  app; typing `Ilf` offers `Ilford Delta 100`. A superset of the values already
+  carried over from the last post, which only remembers the most recent one.
+- **Save as preset.** A button opening a small dialog: name the preset, tick
+  the fields it should carry, save. Recalled from a list when composing —
+  a body and a film you come back to, rather than whatever you did last.
+- **A digital / film switch.** One checkbox hiding the film, lab and scanner
+  fields, which mean nothing on a digital frame and only crowd the form.
+- **Set that switch from the EXIF.** A file carrying a lens, an aperture and an
+  ISO was almost certainly shot digitally, so the box can start ticked and keep
+  the film fields out of the way. A guess, never a verdict: a scan often
+  carries its *scanner's* EXIF and looks digital, so the box stays yours to
+  untick.
 
 ## License
 
