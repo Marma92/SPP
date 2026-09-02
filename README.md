@@ -90,6 +90,11 @@ into a temporary directory on every launch.
 It is unsigned, so Windows SmartScreen warns about it until a signing
 certificate is paid for.
 
+The icon is built from the artwork with `python packaging/make_icon.py`. Sizes
+below 32 pixels are cropped tighter, to the two lenses, because the whole
+camera turns to mush down there and the lenses are the part that still says
+what the application is.
+
 ## Configure
 
 Open **Settings** in the window and fill in the platforms you use. Nothing else

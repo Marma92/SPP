@@ -28,7 +28,9 @@ analysis = Analysis(
     [str(PROJECT / "spp_gui.py")],
     pathex=[str(PROJECT)],
     binaries=[],
-    datas=[],
+    # The window and taskbar icon is read at runtime, not only stamped on the
+    # executable, so it has to travel with the bundle.
+    datas=[(str(PROJECT / "packaging" / "spp.ico"), "packaging")],
     hiddenimports=HIDDEN,
     hookspath=[],
     runtime_hooks=[],

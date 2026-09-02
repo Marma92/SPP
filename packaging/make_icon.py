@@ -1,42 +1,64 @@
-"""Draw the application icon.
+"""Turn the source artwork into the application icon.
 
-A lens ring in the accent colour on the window's own background: legible at
-16 pixels, where anything with lettering or fine stripes turns to mush.
+Two things matter beyond resizing.
+
+The camera fills barely a third of the source; cropping to the body first gives
+it every pixel an icon size can offer. And below 32 pixels the whole camera
+turns to mush, so the small sizes are cropped tighter still, to the two lenses
+-- the part that still says "camera" when nothing else survives. Hand-tuning
+the small sizes is what icon sets have always done.
+
+    python packaging/make_icon.py
 """
 
 from pathlib import Path
 
-from PIL import Image, ImageDraw
+from PIL import Image, ImageFilter
 
-SIZE = 512
-BACKGROUND = (30, 28, 26, 255)
-ACCENT = (227, 162, 74, 255)
-SIZES = [(n, n) for n in (16, 24, 32, 48, 64, 128, 256)]
+HERE = Path(__file__).resolve().parent
+SOURCE = HERE / "spp-source.png"
+
+# Measured on the artwork: the body without its reflection, and the lens block.
+BODY_CENTRE, BODY_SIDE = (624, 632), 1176
+LENS_CENTRE, LENS_SIDE = (616, 700), 760
+
+# Below this, the body is unreadable and the lenses take over.
+DETAIL_FLOOR = 32
+
+SIZES = (16, 24, 32, 48, 64, 128, 256)
 
 
-def draw():
-    image = Image.new("RGBA", (SIZE, SIZE), (0, 0, 0, 0))
-    pen = ImageDraw.Draw(image)
+def _square(image, centre, side):
+    x, y = centre
+    half = side // 2
+    return image.crop((x - half, y - half, x + half, y + half))
 
-    pen.rounded_rectangle([0, 0, SIZE - 1, SIZE - 1], radius=96, fill=BACKGROUND)
 
-    margin, thickness = 104, 46
-    pen.ellipse(
-        [margin, margin, SIZE - margin, SIZE - margin], outline=ACCENT, width=thickness
+def render(image, size):
+    source = _square(image, BODY_CENTRE, BODY_SIDE)
+    if size < DETAIL_FLOOR:
+        source = _square(image, LENS_CENTRE, LENS_SIDE)
+    small = source.resize((size, size), Image.Resampling.LANCZOS)
+    if size <= 64:
+        # Downsampling softens pixel art; this puts the edges back.
+        small = small.filter(ImageFilter.UnsharpMask(radius=1, percent=110, threshold=2))
+    return small
+
+
+def main():
+    image = Image.open(SOURCE).convert("RGB")
+    frames = [render(image, size) for size in SIZES]
+
+    # Pillow writes one entry per size when they are handed over as append_images.
+    frames[-1].save(
+        HERE / "spp.ico",
+        format="ICO",
+        sizes=[(size, size) for size in SIZES],
+        append_images=frames[:-1],
     )
-
-    # An off-centre highlight, so the ring reads as a lens rather than an O.
-    dot = 54
-    centre = SIZE // 2
-    pen.ellipse(
-        [centre - dot, centre - dot - 26, centre + dot, centre + dot - 26], fill=ACCENT
-    )
-    return image
+    render(image, 256).save(HERE / "spp.png")
+    print("spp.ico", (HERE / "spp.ico").stat().st_size // 1024, "KB", "-", list(SIZES))
 
 
 if __name__ == "__main__":
-    here = Path(__file__).resolve().parent
-    icon = draw()
-    icon.save(here / "spp.ico", sizes=SIZES)
-    icon.resize((256, 256), Image.Resampling.LANCZOS).save(here / "spp.png")
-    print("spp.ico", (here / "spp.ico").stat().st_size // 1024, "KB")
+    main()
