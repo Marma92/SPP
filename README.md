@@ -156,8 +156,6 @@ Use the same machine and connection as the browser.
   still holds everything needed to try again — the post, and the picture
   already prepared. A Retry button on that row, instead of a dead end and a
   full recompose.
-- **A queue.** Prepare several pictures, then publish them in one go, rather
-  than one window session per photograph.
 
 ### Composing a post
 
@@ -211,6 +209,10 @@ Use the same machine and connection as the browser.
   URL. And letting anyone else sign in with their own account needs Advanced
   Access, which means App Review and business verification. Worth checking at
   the same time whether the location and the user tag survive the move.
+- **A queue.** Prepare several pictures, then publish them in one go, rather
+  than one window session per photograph. It turns a single-post window into a
+  list beside an editor, which is most of the interface reworked — for a habit
+  that is, so far, one photograph at a time.
 - **Scheduled posts.** Publishing at six in the evening means something has to
   be running at six in the evening. Either the window stays open, which is not
   really scheduling, or it takes a headless mode, a queue that outlives a
