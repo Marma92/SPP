@@ -21,8 +21,10 @@ RESIZE_DIR = PROJECT_ROOT / "resizes"
 INSTAGRAM_DIR = PROJECT_ROOT / "instagram"
 BLUESKY_DIR = PROJECT_ROOT / "bluesky"
 SESSION_DIR = PROJECT_ROOT / "sessions"
+STATE_DIR = PROJECT_ROOT / "state"
 INSTAGRAM_SESSION_FILE = SESSION_DIR / "instagram_session.json"
 BLUESKY_SESSION_FILE = SESSION_DIR / "bluesky_session.txt"
+LAST_POST_FILE = STATE_DIR / "last_post.json"
 
 load_dotenv(PROJECT_ROOT / ".env")
 

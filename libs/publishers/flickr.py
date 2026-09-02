@@ -1,16 +1,18 @@
 from libs import config
-from libs.publishers.base import Prepared, Publisher
+from libs.publishers.base import Publisher
 
 
 class FlickrPublisher(Publisher):
     name = "flickr"
+    image_label = "original"
+    limit = None
 
     def credentials(self):
         return config.FlickrAuth.load()
 
-    def prepare(self, post):
+    def prepare_image(self, post):
         # Flickr is the archive: it gets the original file, untouched.
-        return Prepared(image=post.filepath, text=post.caption)
+        return post.filepath
 
     def publish(self, post, prepared):
         import flickrapi

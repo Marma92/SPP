@@ -109,6 +109,7 @@ venv.bak/
 /replays
 /resizes
 /sessions
+/state
 flickrauth.py
 instaauth.py
 twitterauth.py

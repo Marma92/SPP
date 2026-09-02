@@ -1,16 +1,18 @@
 from libs import config
 from libs.images import prepare_for_instagram
-from libs.publishers.base import Prepared, Publisher
+from libs.publishers.base import Publisher
 
 
 class InstagramPublisher(Publisher):
     name = "instagram"
+    image_label = "1440\u00b2"
+    limit = 2200
 
     def credentials(self):
         return config.InstagramAuth.load()
 
-    def prepare(self, post):
-        return Prepared(image=prepare_for_instagram(post.filepath), text=post.caption)
+    def prepare_image(self, post):
+        return prepare_for_instagram(post.filepath)
 
     def publish(self, post, prepared):
         from instagrapi import Client

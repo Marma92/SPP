@@ -4,9 +4,8 @@ import argparse
 import sys
 from pathlib import Path
 
-from libs import config, exif, publishers
+from libs import config, exif, lastpost, publishers, runner
 from libs.post import Post
-from libs.publishers.base import Result
 
 
 def ask(prompt, default=""):
@@ -16,16 +15,20 @@ def ask(prompt, default=""):
 
 
 def collect(picture=None):
-    """Prompt for the picture and its metadata, pre-filled from the EXIF."""
+    """Prompt for the picture and its metadata, pre-filled where we can."""
     filepath = picture or ask("Enter a path for your picture to post")
     post = Post(filepath=Path(filepath).expanduser())
     if not post.filepath.is_file():
         raise SystemExit("No such picture: %s" % post.filepath)
 
     hints = exif.read(post.filepath)
+    remembered = lastpost.load()
     if hints.filled():
         print("Read from the EXIF: %s -- press enter to keep what is proposed."
               % ", ".join(hints.filled()))
+    if any(remembered.values()):
+        print("Carried over from your last post: %s."
+              % ", ".join(field for field, value in remembered.items() if value))
 
     post.title = ask("Give a title to your picture")
     post.description = ask("Give a legend to your picture")
@@ -34,9 +37,9 @@ def collect(picture=None):
 
     post.camera = ask("Which camera did you use ?", hints.camera)
     post.lens = ask("And which lens ?", hints.lens)
-    post.film = ask("Which film did you use ? (leave blank if not)")
-    post.lab = ask("Any special lab ? (leave blank if not)")
-    post.scan = ask("Who scanned it ? (leave blank if not)")
+    post.film = ask("Which film did you use ? (leave blank if not)", remembered["film"])
+    post.lab = ask("Any special lab ? (leave blank if not)", remembered["lab"])
+    post.scan = ask("Who scanned it ? (leave blank if not)", remembered["scan"])
     post.date = ask("Date of capture? (leave blank if not)", hints.date)
 
     post.location = ask(
@@ -48,25 +51,6 @@ def collect(picture=None):
         post.lng = ask("Longitude ?", hints.lng)
     post.usertag = ask("Someone to tag? (leave blank if not)")
     return post
-
-
-def run(publisher, post, dry_run):
-    """Prepare then publish on one platform, never raising into the caller."""
-    try:
-        prepared = publisher.prepare(post)
-    except Exception as error:
-        return Result(publisher.name, False, "preparation failed: %s" % error)
-
-    print("\n--- %s ---" % publisher.name)
-    print("image: %s" % prepared.image)
-    print(prepared.text)
-
-    if dry_run:
-        return Result(publisher.name, True, "dry run, nothing posted")
-    try:
-        return Result(publisher.name, True, publisher.publish(post, prepared))
-    except Exception as error:
-        return Result(publisher.name, False, "%s: %s" % (type(error).__name__, error))
 
 
 def parse_args(argv):
@@ -109,12 +93,24 @@ def main(argv=None):
                                 " (dry run)" if args.dry_run else ""))
 
     post = collect(args.picture)
-    results = [run(publisher, post, args.dry_run) for publisher in selected]
+    print("\nAnd here ya go!")
+
+    results = []
+    for event in runner.run(selected, post, args.dry_run):
+        if event.kind == runner.PREPARED:
+            print("\n--- %s ---" % event.platform)
+            print("image: %s" % event.prepared.image)
+            print(event.prepared.text)
+        elif event.kind in (runner.DONE, runner.FAILED):
+            results.append((event.platform, event.kind == runner.DONE, event.detail))
 
     print("\n=== summary ===")
-    for result in results:
-        print("%-10s %s  %s" % (result.platform, "ok " if result.ok else "FAIL", result.detail))
-    return 0 if all(result.ok for result in results) else 1
+    for platform, ok, detail in results:
+        print("%-10s %s  %s" % (platform, "ok " if ok else "FAIL", detail))
+
+    if not args.dry_run and any(ok for _, ok, _ in results):
+        lastpost.save(post)
+    return 0 if all(ok for _, ok, _ in results) else 1
 
 
 if __name__ == "__main__":

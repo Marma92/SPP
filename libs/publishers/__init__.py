@@ -1,6 +1,6 @@
 """Registry of the available platforms."""
 
-from libs.publishers.base import Prepared, Publisher, Result
+from libs.publishers.base import Prepared, Publisher
 from libs.publishers.bluesky import BlueskyPublisher
 from libs.publishers.flickr import FlickrPublisher
 from libs.publishers.instagram import InstagramPublisher
