@@ -1,9 +1,17 @@
 """Small building blocks the window is assembled from."""
 
-from PySide6.QtCore import QByteArray, Qt, Signal
-from PySide6.QtGui import QPainter, QPixmap
+from PySide6.QtCore import (
+    QByteArray,
+    QEasingCurve,
+    QPropertyAnimation,
+    Property,
+    Qt,
+    Signal,
+)
+from PySide6.QtGui import QColor, QPainter, QPixmap
 from PySide6.QtSvg import QSvgRenderer
 from PySide6.QtWidgets import (
+    QAbstractButton,
     QFileDialog,
     QFrame,
     QHBoxLayout,
@@ -186,3 +194,67 @@ class DropArea(QFrame):
             if url.isLocalFile():
                 self.picked.emit(url.toLocalFile())
                 return
+
+
+class ToggleSwitch(QAbstractButton):
+    """A switch, where a tick box would have said the same thing more heavily."""
+
+    TRACK = (36, 20)
+    KNOB = 14
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setCheckable(True)
+        self.setFixedSize(*self.TRACK)
+        self.setCursor(Qt.PointingHandCursor)
+
+        self._offset = 0.0
+        self._slide = QPropertyAnimation(self, b"offset", self)
+        self._slide.setDuration(130)
+        self._slide.setEasingCurve(QEasingCurve.InOutCubic)
+        self.toggled.connect(self._start)
+
+    def _start(self, on):
+        self._slide.stop()
+        self._slide.setStartValue(self._offset)
+        self._slide.setEndValue(1.0 if on else 0.0)
+        self._slide.start()
+
+    def getOffset(self):
+        return self._offset
+
+    def setOffset(self, value):
+        self._offset = value
+        self.update()
+
+    # Animating a Python attribute needs Qt to know about it as a property.
+    offset = Property(float, getOffset, setOffset)
+
+    def setChecked(self, on):
+        super().setChecked(on)
+        # A programmatic change skips the animation's usual trigger order.
+        self._offset = 1.0 if on else 0.0
+        self.update()
+
+    def paintEvent(self, _event):
+        width, height = self.TRACK
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.Antialiasing)
+        painter.setPen(Qt.NoPen)
+
+        live = self.isEnabled()
+        track = QColor(theme.ACCENT if self.isChecked() else "#3a352f")
+        knob = QColor("#241f18" if self.isChecked() else theme.MUTED)
+        if not live:
+            track.setAlpha(90)
+            knob.setAlpha(120)
+
+        painter.setBrush(track)
+        painter.drawRoundedRect(0, 0, width, height, height / 2, height / 2)
+
+        margin = (height - self.KNOB) / 2
+        travel = width - self.KNOB - 2 * margin
+        painter.setBrush(knob)
+        painter.drawEllipse(
+            margin + self._offset * travel, margin, self.KNOB, self.KNOB
+        )

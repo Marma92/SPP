@@ -10,10 +10,11 @@ import re
 from pathlib import Path
 
 from PIL import Image
-from PySide6.QtCore import Qt, QStringListModel
-from PySide6.QtGui import QPixmap
+from PySide6.QtCore import QSize, Qt, QStringListModel
+from PySide6.QtGui import QIcon, QPixmap
 from PySide6.QtWidgets import (
     QCheckBox,
+    QGraphicsOpacityEffect,
     QComboBox,
     QCompleter,
     QDialog,
@@ -36,13 +37,24 @@ from libs.gui import theme
 from libs.gui.presetdialog import SavePresetDialog
 from libs.gui.settingsdialog import SettingsDialog
 from libs.gui.publishing import PublishDialog
-from libs.gui.widgets import DropArea, Field, SegmentedBar, label, section
+from libs.gui import logos
+from libs.gui.widgets import (
+    DropArea,
+    Field,
+    SegmentedBar,
+    ToggleSwitch,
+    label,
+    section,
+)
 from libs.gui.workers import PrepareWorker, PublishWorker
 from libs.post import Post
 
 PREVIEW_PANE = 620
 PREVIEW_BOX = (578, 318)
 TAG_PATTERN = re.compile(r"(#\w+)")
+
+# How full a caption must be before its counter is worth showing.
+CROWDED = 0.8
 
 
 def escape(text):
@@ -83,13 +95,6 @@ def repolish(widget):
     widget.style().polish(widget)
 
 
-def dot(color):
-    marker = QFrame()
-    marker.setFixedSize(6, 6)
-    marker.setStyleSheet("background: %s; border-radius: 3px;" % color)
-    return marker
-
-
 class MainWindow(QMainWindow):
     def __init__(self, publishers):
         super().__init__()
@@ -104,7 +109,6 @@ class MainWindow(QMainWindow):
         self.vocabulary = vocabulary.load()
         self.completions = {}
         self.presets = presets.load()
-        self.chips = {}
         self._worker = None
 
         self.setWindowTitle("SPP — Simple Photo Poster")
@@ -129,6 +133,11 @@ class MainWindow(QMainWindow):
     # ------------------------------------------------------------------ build
 
     def _build_chrome(self):
+        """The picture's name, and the way into the settings. Nothing else.
+
+        The wordmark said what the title bar already says, and a row of status
+        chips repeated what the footer now shows plainly.
+        """
         bar = QFrame()
         bar.setObjectName("chrome")
         bar.setFixedHeight(52)
@@ -136,33 +145,18 @@ class MainWindow(QMainWindow):
         box.setContentsMargins(20, 0, 20, 0)
         box.setSpacing(12)
 
-        box.addWidget(label("SPP", "wordmark"))
-        divider = QFrame()
-        divider.setFixedSize(1, 16)
-        divider.setStyleSheet("background: #3a352f;")
-        box.addWidget(divider)
-
         self.filename = label("Simple Photo Poster", "mono")
         self.filename.setStyleSheet("color: %s; font-size: 12px;" % theme.TEXT_DIM)
         box.addWidget(self.filename)
         box.addStretch(1)
 
-        for publisher in self.publishers:
-            reason = publisher.unavailable()
-            chip = QWidget()
-            row = QHBoxLayout(chip)
-            row.setContentsMargins(0, 0, 0, 0)
-            row.setSpacing(6)
-            marker = dot(theme.OK if reason is None else "#4a443c")
-            name = label(publisher.name, "mono")
-            name.setToolTip(reason or "ready")
-            row.addWidget(marker)
-            row.addWidget(name)
-            self.chips[publisher.name] = (marker, name)
-            box.addWidget(chip)
-            box.addSpacing(10)
-
-        self.settings_button = QPushButton("Settings")
+        self.settings_button = QPushButton()
+        self.settings_button.setObjectName("icon")
+        self.settings_button.setIcon(QIcon(logos.pixmap(logos.GEAR, 34, theme.MUTED)))
+        self.settings_button.setIconSize(QSize(17, 17))
+        self.settings_button.setFixedSize(30, 30)
+        self.settings_button.setToolTip("Settings")
+        self.settings_button.setCursor(Qt.PointingHandCursor)
         self.settings_button.clicked.connect(self._open_settings)
         box.addWidget(self.settings_button)
         return bar
@@ -175,23 +169,19 @@ class MainWindow(QMainWindow):
         """Credentials may have just changed: ask every platform again."""
         for publisher in self.publishers:
             reason = publisher.unavailable()
-            marker, name = self.chips[publisher.name]
-            marker.setStyleSheet(
-                "background: %s; border-radius: 3px;"
-                % (theme.OK if reason is None else "#4a443c")
-            )
-            name.setToolTip(reason or "ready")
+            hint = reason or "Post to %s" % publisher.name.capitalize()
 
-            check = self.checks[publisher.name]
-            became_usable = reason is None and not check.isEnabled()
-            check.setEnabled(reason is None)
-            check.setToolTip(reason or "")
+            switch = self.checks[publisher.name]
+            became_usable = reason is None and not switch.isEnabled()
+            switch.setEnabled(reason is None)
+            switch.setToolTip(hint)
+            self.counters[publisher.name].setToolTip(hint)
             if reason is not None:
-                check.setChecked(False)
+                switch.setChecked(False)
             elif became_usable:
-                # Newly configured: tick it. One left unticked on purpose stays
-                # that way.
-                check.setChecked(True)
+                # Newly configured: switch it on. One turned off on purpose
+                # stays off.
+                switch.setChecked(True)
         self._refresh_footer()
 
     def _build_drop_page(self):
@@ -445,31 +435,44 @@ class MainWindow(QMainWindow):
         bar.setFixedHeight(64)
         box = QHBoxLayout(bar)
         box.setContentsMargins(20, 0, 20, 0)
-        box.setSpacing(22)
+        box.setSpacing(20)
 
         self.checks = {}
         self.counters = {}
+        self.marks = {}
         for publisher in self.publishers:
             # A platform whose client library is missing, or whose credentials
-            # are not in .env, cannot be ticked -- and says why on hover.
+            # are absent, cannot be switched on -- and says why on hover.
             reason = publisher.unavailable()
-            check = QCheckBox(publisher.name.capitalize())
-            check.setChecked(reason is None)
-            check.setEnabled(reason is None)
-            check.setToolTip(reason or "")
-            check.toggled.connect(self._on_edit)
+            hint = reason or "Post to %s" % publisher.name.capitalize()
+
+            mark = QLabel()
+            mark.setPixmap(logos.platform(publisher.name, 19, theme.TEXT_DIM))
+            mark.setToolTip(hint)
+            mark.setFixedWidth(19)
+            # An effect rather than a second colour: it fades Flickr's blue and
+            # pink along with the monochrome marks, in one rule.
+            fade = QGraphicsOpacityEffect(mark)
+            mark.setGraphicsEffect(fade)
+            self.marks[publisher.name] = fade
+
+            switch = ToggleSwitch()
+            switch.setChecked(reason is None)
+            switch.setEnabled(reason is None)
+            switch.setToolTip(hint)
+            switch.toggled.connect(self._on_edit)
+
             counter = label("", "mono")
-            if reason is not None:
-                counter.setText("unavailable")
-                counter.setToolTip(reason)
-            self.checks[publisher.name] = check
+            counter.setToolTip(hint)
+            self.checks[publisher.name] = switch
             self.counters[publisher.name] = counter
 
             group = QWidget()
             row = QHBoxLayout(group)
             row.setContentsMargins(0, 0, 0, 0)
             row.setSpacing(9)
-            row.addWidget(check)
+            row.addWidget(mark)
+            row.addWidget(switch)
             row.addWidget(counter)
             box.addWidget(group)
 
@@ -666,6 +669,9 @@ class MainWindow(QMainWindow):
         for publisher in self.publishers:
             counter = self.counters[publisher.name]
             check = self.checks[publisher.name]
+            self.marks[publisher.name].setOpacity(
+                1.0 if check.isChecked() and check.isEnabled() else 0.32
+            )
             if not check.isEnabled():
                 counter.setText("unavailable")
                 continue
@@ -677,9 +683,15 @@ class MainWindow(QMainWindow):
                 counter.setText("")
                 continue
             used = publisher.measure(caption)
+            over = used > publisher.limit
+            # Five counters reading far below their limit are five things to
+            # ignore. It speaks when the caption is close, and shouts when past.
+            if not over and used < publisher.limit * CROWDED:
+                counter.setText("")
+                continue
             counter.setText("%d / %d" % (used, publisher.limit))
             counter.setStyleSheet(
-                "color: %s;" % (theme.DANGER if used > publisher.limit else theme.MUTED)
+                "color: %s;" % (theme.DANGER if over else theme.MUTED)
             )
         self.publish_button.setText(
             "Publish to %d platform%s" % (chosen, "" if chosen == 1 else "s")

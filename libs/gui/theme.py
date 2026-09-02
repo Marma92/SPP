@@ -71,8 +71,16 @@ QPushButton#primary {{ background: {accent}; border: none; color: #241f18; font-
     padding: 9px 18px; }}
 QPushButton#primary:hover {{ background: #f0b25c; }}
 QPushButton#primary:disabled {{ background: #332c25; color: #736b62; }}
+QPushButton#icon {{ background: transparent; border: none; border-radius: 6px;
+    padding: 0; }}
+QPushButton#icon:hover {{ background: #322d27; }}
+
 QPushButton[role="tab"] {{ background: transparent; border: 1px solid transparent;
     border-radius: 5px; padding: 6px 12px; color: {muted}; font-size: 12px; }}
+QPushButton#icon {{ background: transparent; border: none; border-radius: 6px;
+    padding: 0; }}
+QPushButton#icon:hover {{ background: #322d27; }}
+
 QPushButton[role="tab"]:checked {{ background: #37312a; border-color: {border_hi}; color: {text}; }}
 
 QCheckBox {{ spacing: 8px; color: {text_dim}; }}
