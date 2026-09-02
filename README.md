@@ -35,11 +35,15 @@ to know beforehand.
 **Fills in what it can.** Camera, lens, capture date and GPS coordinates come
 from the picture's EXIF. Film, lab and scanner — which no camera writes — are
 carried over from your last post. Every pre-filled field says where its value
-came from, and typing over it is the whole interaction.
+came from, and typing over it is the whole interaction. On a digital frame the
+film fields disappear entirely: the EXIF ticks the box, you untick it whenever
+it guessed wrong.
 
 **Fails one platform at a time.** A platform that is down, unconfigured, or
 missing its client library never takes the others with it. The window greys it
-out and says why before you start; the run reports each platform separately.
+out and says why before you start, and a platform that fails during the run
+keeps a Retry button on its own row — one bad upload never costs you the post
+you just composed.
 
 ## Platforms
 
@@ -157,13 +161,6 @@ Use the same machine and connection as the browser.
   the cheapest platforms left to add.
 - **Facebook.** Wanted since the very first todo list, never actually wired up.
 
-### Publishing
-
-- **Retry a single platform from its row.** When one fails, the run dialog
-  still holds everything needed to try again — the post, and the picture
-  already prepared. A Retry button on that row, instead of a dead end and a
-  full recompose.
-
 ### Composing a post
 
 - **Remember what has been typed, and suggest it back.** Every camera, lens,
@@ -173,13 +170,6 @@ Use the same machine and connection as the browser.
 - **Save as preset.** A button opening a small dialog: name the preset, tick
   the fields it should carry, save. Recalled from a list when composing —
   a body and a film you come back to, rather than whatever you did last.
-- **A digital / film switch.** One checkbox hiding the film, lab and scanner
-  fields, which mean nothing on a digital frame and only crowd the form.
-- **Set that switch from the EXIF.** A file carrying a lens, an aperture and an
-  ISO was almost certainly shot digitally, so the box can start ticked and keep
-  the film fields out of the way. A guess, never a verdict: a scan often
-  carries its *scanner's* EXIF and looks digital, so the box stays yours to
-  untick.
 
 ### Shipping a 1.0
 

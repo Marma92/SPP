@@ -570,7 +570,7 @@ class MainWindow(QMainWindow):
             return
         self._sync_post()
 
-        dialog = PublishDialog(selected, self.post, parent=self)
+        dialog = PublishDialog(selected, self.post, self.images, parent=self)
         worker = PublishWorker(selected, self.post, self.images, parent=self)
         worker.progress.connect(dialog.on_event)
         worker.finished.connect(dialog.on_finished)
