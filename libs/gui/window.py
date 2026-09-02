@@ -227,8 +227,11 @@ class MainWindow(QMainWindow):
         box.setSpacing(12)
 
         self.tabs = SegmentedBar()
+        # The name alone: what each platform receives is already spelled out in
+        # the line under the preview, and five specs no longer fit across.
         self.tabs.set_items(
-            ["%s · %s" % (p.name.capitalize(), p.image_label) for p in self.publishers]
+            [p.name.capitalize() for p in self.publishers],
+            ["receives the %s" % p.image_label for p in self.publishers],
         )
         self.tabs.changed.connect(lambda _index: self._on_tab())
         row = QHBoxLayout()

@@ -10,12 +10,13 @@ import datetime
 
 from PIL import Image, ImageOps
 
-from libs.config import BLUESKY_DIR, INSTAGRAM_DIR, RESIZE_DIR
+from libs.config import BLUESKY_DIR, FEDIVERSE_DIR, INSTAGRAM_DIR
 
 SUPPORTED_FORMATS = {"JPEG", "PNG", "BMP", "TIFF", "WEBP"}
 
-TWITTER_MAX_EDGE = 2048
-TWITTER_MAX_BYTES = 5 * 1024 * 1024
+# Mastodon's own limit is 8 MB by default; instances may set their own.
+FEDIVERSE_MAX_EDGE = 2048
+FEDIVERSE_MAX_BYTES = 8 * 1024 * 1024
 INSTAGRAM_SIDE = 1440
 
 # Bluesky rejects any blob over 1,000,000 bytes.
@@ -75,12 +76,13 @@ def _save_jpeg(image, target, max_bytes=None):
     )
 
 
-def prepare_for_twitter(filepath):
-    """Shrink to 2048px on the long edge and under the 5MB upload cap."""
+def prepare_for_fediverse(filepath):
+    """Shrink to 2048px on the long edge, under the upload cap Mastodon and
+    Pixelfed default to."""
     image = _load(filepath)
-    if max(image.size) > TWITTER_MAX_EDGE:
-        image = _fit(image, TWITTER_MAX_EDGE, TWITTER_MAX_EDGE)
-    return _save_jpeg(image, _target_path(RESIZE_DIR), TWITTER_MAX_BYTES)
+    if max(image.size) > FEDIVERSE_MAX_EDGE:
+        image = _fit(image, FEDIVERSE_MAX_EDGE, FEDIVERSE_MAX_EDGE)
+    return _save_jpeg(image, _target_path(FEDIVERSE_DIR), FEDIVERSE_MAX_BYTES)
 
 
 def prepare_for_instagram(filepath):

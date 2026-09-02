@@ -36,6 +36,22 @@ GROUPS = (
         ),
     ),
     (
+        "Mastodon",
+        (
+            ("MASTODON_INSTANCE", "Instance (e.g. mastodon.social)", not SECRET),
+            ("MASTODON_TOKEN", "Access token", SECRET),
+            ("MASTODON_MAX_CHARS", "Caption limit of that instance (blank = 500)", not SECRET),
+        ),
+    ),
+    (
+        "Pixelfed",
+        (
+            ("PIXELFED_INSTANCE", "Instance (e.g. pixelfed.social)", not SECRET),
+            ("PIXELFED_TOKEN", "Access token", SECRET),
+            ("PIXELFED_MAX_CHARS", "Caption limit of that instance (blank = 500)", not SECRET),
+        ),
+    ),
+    (
         "General",
         (
             ("SPP_PLATFORMS", "Platforms posted to by default (blank = all)", not SECRET),

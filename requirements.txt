@@ -7,3 +7,4 @@ python-dotenv>=1.0
 flickrapi>=2.4
 instagrapi>=2.1
 atproto>=0.0.61       # Bluesky
+Mastodon.py>=1.8      # Mastodon and Pixelfed, which shares its API
