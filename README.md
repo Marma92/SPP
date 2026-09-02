@@ -75,6 +75,21 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
+### Building an executable
+
+```
+pip install pyinstaller
+pyinstaller packaging/spp.spec
+```
+
+`dist/SPP/` is then self-contained: `SPP.exe` and everything it needs, around
+525 MB of it — mostly the Chromium that hosts the Instagram sign-in. One folder
+rather than one file on purpose, since a single file would unpack all of that
+into a temporary directory on every launch.
+
+It is unsigned, so Windows SmartScreen warns about it until a signing
+certificate is paid for.
+
 ## Configure
 
 Open **Settings** in the window and fill in the platforms you use. Nothing else
@@ -183,14 +198,10 @@ and signing that browser out revokes it.
 
 ### Shipping a 1.0
 
-- **One executable, downloaded and double-clicked.** PyInstaller over the
-  window, with an icon and a version stamped in. It will be a heavy download —
-  Qt and the bundled Chromium see to that, and measuring the real figure is
-  part of the work. Windows SmartScreen will warn about an unsigned binary
-  until a signing certificate is paid for.
-- **A tagged 1.0 release.** A version number in the code, a GitHub Release with
-  the build attached and notes saying what works — built by a workflow rather
-  than by hand on one machine, so the download matches the tag.
+- **A tagged 1.0 release.** The version is in the code and the build is
+  reproducible from `packaging/spp.spec`; what is left is the tag, a GitHub
+  Release with the build attached and notes saying what works, and a workflow
+  to produce it rather than one machine, so the download matches the tag.
 
 ### After 1.0
 

@@ -12,7 +12,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from libs import settings
+from libs import __version__, settings
 from libs.gui import theme
 from libs.gui.widgets import label, section
 
@@ -44,7 +44,8 @@ class SettingsDialog(QDialog):
         box.addWidget(title)
         box.addWidget(
             label(
-                "Stored in your own data directory, not beside the application.",
+                "Stored in your own data directory, not beside the "
+                "application. SPP %s." % __version__,
                 "hint",
             )
         )
