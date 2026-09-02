@@ -3,8 +3,24 @@
 import sys
 from pathlib import Path
 
+from PySide6.QtCore import QtMsgType, qInstallMessageHandler
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QApplication
+
+# Qt prints this once while the form is being laid out. It was chased down:
+# it survives giving the menu, the quiet button and the application their own
+# point-sized fonts, it cannot be reproduced from the same widgets built by
+# hand, and no single child of the form provokes it -- so it comes from Qt's
+# own style machinery rather than from anything set here. It costs a font
+# fallback nothing renders differently for, and a released application has no
+# business printing it at its user.
+BENIGN = "QFont::setPointSize: Point size <= 0"
+
+
+def quieten(mode, context, message):
+    if BENIGN in message:
+        return
+    print(message, file=sys.stderr)
 
 from libs import publishers
 from libs.gui import theme
@@ -20,6 +36,7 @@ def window_icon():
 
 def main(argv=None):
     argv = list(sys.argv if argv is None else argv)
+    qInstallMessageHandler(quieten)
     app = QApplication(argv)
     app.setApplicationName("SPP")
     app.setWindowIcon(window_icon())

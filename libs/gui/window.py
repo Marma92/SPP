@@ -308,7 +308,8 @@ class MainWindow(QMainWindow):
         self.preset_button = QPushButton("Presets")
         self.preset_button.setObjectName("quiet")
         self.preset_button.setCursor(Qt.PointingHandCursor)
-        self.preset_menu = QMenu(self)
+        # Owned by the button it belongs to rather than by the window.
+        self.preset_menu = QMenu(self.preset_button)
         self.preset_menu.aboutToShow.connect(self._fill_preset_menu)
         self.preset_button.setMenu(self.preset_menu)
 
