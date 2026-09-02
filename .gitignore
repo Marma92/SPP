@@ -105,9 +105,11 @@ venv.bak/
 
 # projects files and folders
 /instagram
+/bluesky
 /replays
 /resizes
 /sessions
+/state
 flickrauth.py
 instaauth.py
 twitterauth.py

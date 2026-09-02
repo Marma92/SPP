@@ -1,0 +1,100 @@
+"""Preparing a picture for each platform.
+
+Only Pillow is used here. `python-resize-image` was dropped: unmaintained since
+2018 and redundant with `Image.thumbnail`. `Image.ANTIALIAS`, which the previous
+version called, was removed in Pillow 10 -- the resize simply crashed on any
+recent install.
+"""
+
+import datetime
+
+from PIL import Image, ImageOps
+
+from libs.config import BLUESKY_DIR, INSTAGRAM_DIR, RESIZE_DIR
+
+SUPPORTED_FORMATS = {"JPEG", "PNG", "BMP", "TIFF", "WEBP"}
+
+TWITTER_MAX_EDGE = 2048
+TWITTER_MAX_BYTES = 5 * 1024 * 1024
+INSTAGRAM_SIDE = 1440
+
+# Bluesky rejects any blob over 1,000,000 bytes.
+BLUESKY_MAX_EDGE = 2000
+BLUESKY_MAX_BYTES = 976 * 1024
+
+# Quality ladder walked down until a JPEG fits under the platform's size cap.
+QUALITY_STEPS = (95, 90, 85, 78, 70, 60)
+
+
+def _load(filepath):
+    """Open a picture as RGB, with its EXIF orientation already applied."""
+    with Image.open(filepath) as image:
+        if image.format not in SUPPORTED_FORMATS:
+            raise ValueError(
+                "Unsupported image format %r (supported: %s)"
+                % (image.format, ", ".join(sorted(SUPPORTED_FORMATS)))
+            )
+        # Without this, a portrait frame straight out of the camera is posted
+        # lying on its side.
+        return ImageOps.exif_transpose(image).convert("RGB")
+
+
+def _fit(image, width, height):
+    """Scale (up or down) so the picture fits inside width x height."""
+    ratio = min(width / image.width, height / image.height)
+    size = (max(1, round(image.width * ratio)), max(1, round(image.height * ratio)))
+    return image.resize(size, Image.Resampling.LANCZOS)
+
+
+def _target_path(directory):
+    directory.mkdir(parents=True, exist_ok=True)
+    return directory / (datetime.datetime.now().strftime("%Y%m%d%H%M%S%f") + ".jpeg")
+
+
+def _encode(image, target, quality):
+    try:
+        image.save(target, "JPEG", quality=quality, subsampling=0, optimize=True)
+    except OSError:
+        # libjpeg's optimisation pass wants the whole frame in a buffer that
+        # Pillow sizes by guesswork; a very detailed scan overflows it and
+        # raises "broken data stream". Optimising only saves a few percent.
+        image.save(target, "JPEG", quality=quality, subsampling=0, optimize=False)
+
+
+def _save_jpeg(image, target, max_bytes=None):
+    """Save as JPEG, trading quality then resolution to fit under max_bytes."""
+    for _ in range(6):
+        for quality in QUALITY_STEPS:
+            _encode(image, target, quality)
+            if max_bytes is None or target.stat().st_size <= max_bytes:
+                return target
+        # Quality alone was not enough: give up some resolution and retry.
+        image = _fit(image, round(image.width * 0.8), round(image.height * 0.8))
+    raise ValueError(
+        "cannot compress %s under %d bytes" % (target.name, max_bytes)
+    )
+
+
+def prepare_for_twitter(filepath):
+    """Shrink to 2048px on the long edge and under the 5MB upload cap."""
+    image = _load(filepath)
+    if max(image.size) > TWITTER_MAX_EDGE:
+        image = _fit(image, TWITTER_MAX_EDGE, TWITTER_MAX_EDGE)
+    return _save_jpeg(image, _target_path(RESIZE_DIR), TWITTER_MAX_BYTES)
+
+
+def prepare_for_instagram(filepath):
+    """Centre the picture in a 1440x1440 white square (the white bands look)."""
+    image = _fit(_load(filepath), INSTAGRAM_SIDE, INSTAGRAM_SIDE)
+    canvas = Image.new("RGB", (INSTAGRAM_SIDE, INSTAGRAM_SIDE), (255, 255, 255))
+    offset = ((INSTAGRAM_SIDE - image.width) // 2, (INSTAGRAM_SIDE - image.height) // 2)
+    canvas.paste(image, offset)
+    return _save_jpeg(canvas, _target_path(INSTAGRAM_DIR))
+
+
+def prepare_for_bluesky(filepath):
+    """Shrink to 2000px on the long edge and under Bluesky's 1MB blob limit."""
+    image = _load(filepath)
+    if max(image.size) > BLUESKY_MAX_EDGE:
+        image = _fit(image, BLUESKY_MAX_EDGE, BLUESKY_MAX_EDGE)
+    return _save_jpeg(image, _target_path(BLUESKY_DIR), BLUESKY_MAX_BYTES)
