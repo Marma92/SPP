@@ -84,15 +84,17 @@ class Field(QWidget):
         self.widget = widget
         self._badge = None
 
+    BADGES = {"exif": "exif", "last": "last post", "preset": "preset"}
+
     def flag(self, kind):
-        """Show 'exif' or 'last post' beside the label, or nothing at all."""
+        """Say where the value came from, or nothing at all."""
         if self._badge is not None:
             self._head.removeWidget(self._badge)
             self._badge.deleteLater()
             self._badge = None
         if not kind:
             return
-        self._badge = label("exif" if kind == "exif" else "last post", "badge")
+        self._badge = label(self.BADGES.get(kind, kind), "badge")
         self._badge.setProperty("kind", kind)
         self._head.insertWidget(1, self._badge)
 

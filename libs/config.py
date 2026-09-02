@@ -46,6 +46,7 @@ INSTAGRAM_SESSION_FILE = SESSION_DIR / "instagram_session.json"
 BLUESKY_SESSION_FILE = SESSION_DIR / "bluesky_session.txt"
 LAST_POST_FILE = STATE_DIR / "last_post.json"
 VOCABULARY_FILE = STATE_DIR / "vocabulary.json"
+PRESETS_FILE = STATE_DIR / "presets.json"
 
 
 def _adopt_clone_data():
