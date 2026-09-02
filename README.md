@@ -177,6 +177,21 @@ Use the same machine and connection as the browser.
   carries its *scanner's* EXIF and looks digital, so the box stays yours to
   untick.
 
+### Shipping a 1.0
+
+- **A settings screen, and a home under the user's own data directory.**
+  Credentials sit in a `.env` beside the source, which is fine for whoever
+  cloned the repository and impossible for anyone else. They need a screen in
+  the window instead. The same goes for the working folders: a bundled app
+  cannot assume it may write next to its own executable.
+- **One executable, downloaded and double-clicked.** PyInstaller over the
+  window, with an icon and a version stamped in. Two things to be honest about
+  up front: Qt makes the build large, and Windows SmartScreen will warn about
+  an unsigned binary until a signing certificate is paid for.
+- **A tagged 1.0 release.** A version number in the code, a GitHub Release with
+  the build attached and notes saying what works — built by a workflow rather
+  than by hand on one machine, so the download matches the tag.
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
