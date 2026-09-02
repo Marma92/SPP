@@ -56,6 +56,19 @@ EXIF and proposed as defaults: press enter to keep one, type over it to
 replace it. A film scan usually carries none of this, in which case the
 questions are simply asked empty, as before.
 
+### When Instagram asks for a verification ###
+
+`instagrapi` drives the private mobile API, so a first login from an unknown
+device is often answered with `ChallengeRequired`. The checkpoint is tied to
+*that* device: clearing it in a browser does not clear it for the library, and
+no `challenge_code_handler` covers the native flow.
+
+The way through is to reuse a browser session that has already been verified.
+Put its `sessionid` cookie in `INSTAGRAM_SESSIONID` (Firefox: F12 > Storage >
+Cookies > instagram.com > sessionid) and it is used instead of the password.
+Treat it as a credential: it expires, and logging that browser out revokes it.
+Use the same machine and connection as the browser.
+
 ### Adding a platform ###
 
 One module in `libs/publishers/` implementing `credentials`, `prepare` and

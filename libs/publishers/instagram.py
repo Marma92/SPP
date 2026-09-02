@@ -38,7 +38,10 @@ class InstagramPublisher(Publisher):
             self._save(client)
 
         try:
-            client.login(auth.username, auth.password)
+            if auth.sessionid:
+                client.login_by_sessionid(auth.sessionid)
+            else:
+                client.login(auth.username, auth.password)
         finally:
             self._save(client)
         return client

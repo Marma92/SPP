@@ -65,10 +65,20 @@ class FlickrAuth:
 class InstagramAuth:
     username: str
     password: str
+    sessionid: str
 
     @classmethod
     def load(cls):
-        return cls(*_require("Instagram", "INSTAGRAM_USERNAME", "INSTAGRAM_PASSWORD"))
+        # A sessionid lifted from a browser that has already cleared Instagram's
+        # verification is the way past a native challenge: the checkpoint is
+        # tied to the device that triggered it, and resolving it in a browser
+        # never clears it for the library's own device.
+        sessionid = os.getenv("INSTAGRAM_SESSIONID", "").strip()
+        if sessionid:
+            return cls(os.getenv("INSTAGRAM_USERNAME", "").strip(), "", sessionid)
+        return cls(
+            *_require("Instagram", "INSTAGRAM_USERNAME", "INSTAGRAM_PASSWORD"), ""
+        )
 
 
 @dataclass(frozen=True)
