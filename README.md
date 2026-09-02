@@ -184,23 +184,34 @@ Use the same machine and connection as the browser.
   cloned the repository and impossible for anyone else. They need a screen in
   the window instead. The same goes for the working folders: a bundled app
   cannot assume it may write next to its own executable.
-- **Capture the Instagram session in the app, rather than asking for
-  devtools.** A Qt WebEngine view on Instagram's login page, the challenge
-  completed inside it, and the `sessionid` read straight off the cookie store —
-  the photographer never has to know what a cookie is. Every piece already
-  ships with PySide6, persistent profile included, so the session survives a
-  restart. What holds it back is weight: embedding Chromium adds some 450 MB
-  to the package, against a 1.0 whose whole promise is a small download. Worth
-  weighing against the option that removes the problem instead of hiding it —
-  Instagram's official Content Publishing API, which wants a Business or
-  Creator account and hands out OAuth rather than a password.
+- **Capture the Instagram session in the app.** A Qt WebEngine view on
+  Instagram's login page, the challenge completed inside it, and the
+  `sessionid` read straight off the cookie store — nobody has to know what a
+  cookie is, or open devtools. Everything needed already ships with PySide6,
+  persistent profile included, so the session survives a restart. Embedding
+  Chromium costs some 450 MB in the package: a deliberate price, since asking
+  a stranger to copy a cookie out of Firefox is not a flow that ships.
 - **One executable, downloaded and double-clicked.** PyInstaller over the
-  window, with an icon and a version stamped in. Two things to be honest about
-  up front: Qt makes the build large, and Windows SmartScreen will warn about
-  an unsigned binary until a signing certificate is paid for.
+  window, with an icon and a version stamped in. It will be a heavy download —
+  Qt and the bundled Chromium see to that, and measuring the real figure is
+  part of the work. Windows SmartScreen will warn about an unsigned binary
+  until a signing certificate is paid for.
 - **A tagged 1.0 release.** A version number in the code, a GitHub Release with
   the build attached and notes saying what works — built by a workflow rather
   than by hand on one machine, so the download matches the tag.
+
+### After 1.0
+
+- **Instagram's official Content Publishing API**, in place of `instagrapi`.
+  It would retire the challenge, the sessionid and the bundled browser in one
+  move: OAuth instead of a password. Access is free, a Business or Creator
+  account is enough, and publishing to your own account needs no App Review.
+  Two things make it later rather than now. It accepts no file upload at all —
+  the picture must sit at a public HTTPS URL that Meta fetches, which a desktop
+  app has nowhere to put, unless the Flickr upload runs first and lends its
+  URL. And letting anyone else sign in with their own account needs Advanced
+  Access, which means App Review and business verification. Worth checking at
+  the same time whether the location and the user tag survive the move.
 
 ## License
 
