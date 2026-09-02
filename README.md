@@ -77,16 +77,21 @@ pip install -r requirements.txt
 
 ## Configure
 
-Credentials live in a git-ignored `.env` at the root of the project:
+Open **Settings** in the window and fill in the platforms you use. Nothing else
+is required: what you save goes to your own data directory, and the window
+picks it up straight away — a platform that becomes usable ticks itself, one
+still missing something says what.
+
+Fill in only the platforms you use. The others are skipped with a reason shown
+rather than an error. `SPP_PLATFORMS` narrows the default selection,
+`SPP_LANGS` sets the language your captions are written in (defaults to `fr`).
+
+A checkout can still be configured the old way instead, with a `.env` at the
+root of the project — it is read when the data directory has none:
 
 ```
 cp .env.example .env
 ```
-
-Fill in only the platforms you use — the others are simply skipped, with a
-reason shown rather than an error. `SPP_PLATFORMS` narrows the default
-selection, `SPP_LANGS` sets the language your captions are written in
-(defaults to `fr`).
 
 Everything the app writes — platform sessions, the values it remembers, the
 resized pictures — lives outside the project, in a per-user data directory:
@@ -171,11 +176,6 @@ Use the same machine and connection as the browser.
 
 ### Shipping a 1.0
 
-- **A settings screen.** Credentials still sit in a `.env`, fine for whoever
-  cloned the repository and impossible for anyone else: they need a screen in
-  the window instead. Everything else the app writes has already moved to a
-  per-user data directory, so a bundled copy no longer assumes it may write
-  beside its own executable.
 - **Capture the Instagram session in the app.** A Qt WebEngine view on
   Instagram's login page, the challenge completed inside it, and the
   `sessionid` read straight off the cookie store — nobody has to know what a

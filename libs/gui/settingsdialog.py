@@ -1,0 +1,107 @@
+"""The screen that replaces editing a .env by hand."""
+
+from PySide6.QtWidgets import (
+    QDialog,
+    QFrame,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QPushButton,
+    QScrollArea,
+    QVBoxLayout,
+    QWidget,
+)
+
+from libs import settings
+from libs.gui import theme
+from libs.gui.widgets import label, section
+
+
+class SettingsDialog(QDialog):
+    """Every credential the app knows about, on one scrollable sheet."""
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Settings")
+        self.setModal(True)
+        self.setMinimumSize(520, 560)
+        self.setStyleSheet(theme.QSS)
+
+        self._inputs = {}
+        current = settings.current()
+
+        outer = QVBoxLayout(self)
+        outer.setContentsMargins(16, 16, 16, 16)
+
+        card = QFrame()
+        card.setObjectName("card")
+        box = QVBoxLayout(card)
+        box.setContentsMargins(20, 18, 20, 16)
+        box.setSpacing(10)
+
+        title = QLabel("Settings")
+        title.setStyleSheet("font-size: 15px; font-weight: 600; color: %s;" % theme.TEXT)
+        box.addWidget(title)
+        box.addWidget(
+            label(
+                "Stored in your own data directory, not beside the application.",
+                "hint",
+            )
+        )
+
+        area = QScrollArea()
+        area.setWidgetResizable(True)
+        holder = QWidget()
+        fields = QVBoxLayout(holder)
+        fields.setContentsMargins(0, 8, 8, 8)
+        fields.setSpacing(6)
+
+        for heading, group in settings.GROUPS:
+            fields.addWidget(section(heading))
+            for name, caption, secret in group:
+                fields.addWidget(label(caption.upper(), "label"))
+                widget = QLineEdit(current.get(name, ""))
+                if secret:
+                    widget.setEchoMode(QLineEdit.Password)
+                fields.addWidget(widget)
+                self._inputs[name] = widget
+        fields.addStretch(1)
+
+        area.setWidget(holder)
+        box.addWidget(area, 1)
+
+        self.reveal = QPushButton("Show secrets")
+        self.reveal.setCheckable(True)
+        self.reveal.toggled.connect(self._reveal)
+
+        cancel = QPushButton("Cancel")
+        cancel.clicked.connect(self.reject)
+        self.save = QPushButton("Save")
+        self.save.setObjectName("primary")
+        self.save.clicked.connect(self._save)
+
+        buttons = QHBoxLayout()
+        buttons.addWidget(self.reveal)
+        buttons.addStretch(1)
+        buttons.addWidget(cancel)
+        buttons.addWidget(self.save)
+        box.addLayout(buttons)
+
+        outer.addWidget(card)
+
+    def _reveal(self, shown):
+        for name, _label, secret in (
+            field for _heading, group in settings.GROUPS for field in group
+        ):
+            if secret:
+                self._inputs[name].setEchoMode(
+                    QLineEdit.Normal if shown else QLineEdit.Password
+                )
+        self.reveal.setText("Hide secrets" if shown else "Show secrets")
+
+    def values(self):
+        return {name: widget.text() for name, widget in self._inputs.items()}
+
+    def _save(self):
+        settings.write(self.values())
+        self.accept()

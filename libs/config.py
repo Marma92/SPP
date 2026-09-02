@@ -66,18 +66,40 @@ def _adopt_clone_data():
 
 _adopt_clone_data()
 
-# A clone keeps its .env where it has always been; an installed copy finds one
-# beside its data. The first file found wins, since load_dotenv leaves
-# variables already set alone.
-for _candidate in (DATA_DIR / ".env", PROJECT_ROOT / ".env"):
-    load_dotenv(_candidate)
+ENV_FILE = DATA_DIR / ".env"
 
 # Optional default platform selection, e.g. SPP_PLATFORMS=flickr,instagram
-DEFAULT_PLATFORMS = os.getenv("SPP_PLATFORMS", "")
+DEFAULT_PLATFORMS = ""
 
 # Language the captions are written in, declared to the platforms that ask
 # for it. Bluesky filters and offers translation on this.
-POST_LANGS = [code.strip() for code in os.getenv("SPP_LANGS", "fr").split(",") if code.strip()]
+POST_LANGS = ["fr"]
+
+
+def _load_env(override=False):
+    """A clone keeps its .env where it has always been; an installed copy finds
+    one beside its data, and that is the file the settings screen writes.
+
+    Nothing overrides a variable already set in the real environment on the way
+    in, so a shell can always win. Only a deliberate reload does, because there
+    the file just written is the truth.
+    """
+    load_dotenv(ENV_FILE, override=override)
+    load_dotenv(PROJECT_ROOT / ".env")
+
+    global DEFAULT_PLATFORMS, POST_LANGS
+    DEFAULT_PLATFORMS = os.getenv("SPP_PLATFORMS", "")
+    POST_LANGS = [
+        code.strip() for code in os.getenv("SPP_LANGS", "fr").split(",") if code.strip()
+    ]
+
+
+def reload():
+    """Re-read the environment after the settings screen has written it."""
+    _load_env(override=True)
+
+
+_load_env()
 
 
 class MissingCredentials(RuntimeError):
