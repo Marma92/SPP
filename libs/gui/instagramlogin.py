@@ -7,10 +7,18 @@ ours, and the session it earns is the one we keep — nobody has to know what a
 cookie is, or open developer tools.
 """
 
+import os
+
 from PySide6.QtCore import QUrl, Signal
 from PySide6.QtWebEngineCore import QWebEnginePage, QWebEngineProfile
 from PySide6.QtWebEngineWidgets import QWebEngineView
-from PySide6.QtWidgets import QDialog, QHBoxLayout, QPushButton, QVBoxLayout
+from PySide6.QtWidgets import (
+    QApplication,
+    QDialog,
+    QHBoxLayout,
+    QPushButton,
+    QVBoxLayout,
+)
 
 from libs import config
 from libs.gui import theme
@@ -33,9 +41,24 @@ def _text(value):
         return str(value)
 
 
-def browser_profile(parent=None):
-    """A profile that keeps what it earns, and does not announce itself."""
-    profile = QWebEngineProfile("instagram", parent)
+_PROFILE = None
+
+
+def browser_profile():
+    """One profile for the whole run, kept alive by the application itself.
+
+    A page must never outlive its profile: Qt says so out loud -- "Release of
+    profile requested but WebEnginePage still not deleted. Expect troubles!" --
+    and a profile owned by a dialog dies with that dialog, in an order Qt makes
+    no promise about. Owning it at application level settles the question, and
+    reusing it means a second visit to this screen finds the session already
+    there.
+    """
+    global _PROFILE
+    if _PROFILE is not None:
+        return _PROFILE
+
+    profile = QWebEngineProfile("instagram", QApplication.instance())
     profile.setPersistentStoragePath(str(config.WEBENGINE_DIR))
     profile.setPersistentCookiesPolicy(QWebEngineProfile.ForcePersistentCookies)
     # The default user agent carries a QtWebEngine token. Instagram has no
@@ -48,7 +71,20 @@ def browser_profile(parent=None):
             if not word.startswith("QtWebEngine/")
         )
     )
+    _PROFILE = profile
     return profile
+
+
+class _Page(QWebEnginePage):
+    """Instagram's console is loud and none of it is ours: unrecognised
+    permissions-policy features, its own analytics blocked by its own CSP,
+    accessibility notes from the captcha. Kept behind SPP_WEBVIEW_DEBUG for
+    the day one of them matters.
+    """
+
+    def javaScriptConsoleMessage(self, level, message, line, source):
+        if os.getenv("SPP_WEBVIEW_DEBUG"):
+            super().javaScriptConsoleMessage(level, message, line, source)
 
 
 class InstagramLoginDialog(QDialog):
@@ -56,7 +92,7 @@ class InstagramLoginDialog(QDialog):
 
     captured = Signal(str)
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, url=LOGIN_URL):
         super().__init__(parent)
         self.setWindowTitle("Sign in to Instagram")
         self.setModal(True)
@@ -77,11 +113,11 @@ class InstagramLoginDialog(QDialog):
         self.status.setWordWrap(True)
         box.addWidget(self.status)
 
-        self._profile = browser_profile(self)
+        self._profile = browser_profile()
         self._profile.cookieStore().cookieAdded.connect(self._on_cookie)
 
         self.view = QWebEngineView(self)
-        self.view.setPage(QWebEnginePage(self._profile, self.view))
+        self.view.setPage(_Page(self._profile, self.view))
         box.addWidget(self.view, 1)
 
         buttons = QHBoxLayout()
@@ -96,7 +132,14 @@ class InstagramLoginDialog(QDialog):
         buttons.addWidget(self.use)
         box.addLayout(buttons)
 
-        self.view.load(QUrl(LOGIN_URL))
+        self.view.load(QUrl(url))
+
+    def done(self, result):
+        """Take the page down with the dialog; the profile stays behind."""
+        self._profile.cookieStore().cookieAdded.disconnect(self._on_cookie)
+        self.view.stop()
+        self.view.deleteLater()
+        super().done(result)
 
     def _on_cookie(self, cookie):
         """Instagram only sets this one once the account is really signed in."""
