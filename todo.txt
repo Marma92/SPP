@@ -3,7 +3,9 @@ TODO:
 - Code Cleaning (generic functions needed). DONE
 
 - Improvement : offering to retrieve EXIF infos to add them to description. DONE
-- Improvement : GUI
+- Improvement : GUI. DONE (PySide6)
+
+- A queue, and scheduled posts.
 - More platforms : Mastodon, Pixelfed.
 
 - Replacing Twitter with Bluesky. DONE

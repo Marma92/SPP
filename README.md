@@ -27,6 +27,18 @@ with a clear message instead of crashing the run.
 ### To use it ###
 
 ```
+python spp_gui.py                            # the window
+python spp_gui.py shot.jpg                   # opens straight on that picture
+```
+
+The window shows, per platform, the picture that will actually be sent and the
+caption that will actually be published -- the same `prepare()` the CLI uses,
+so the preview cannot drift from what gets posted. A caption over a platform's
+limit shows where it will be cut, with the dropped tail struck through.
+
+The command line does the same job, without the preview:
+
+```
 python photopost.py                          # asks for the picture, posts everywhere
 python photopost.py shot.jpg --dry-run       # prepares and shows, posts nothing
 python photopost.py shot.jpg -p flickr,instagram
@@ -66,4 +78,5 @@ reviving on the v2 API.
 _(paste from todo.txt)_
 
 - More platforms: Mastodon, Pixelfed.
-- Desktop GUI (PySide6).
+- A queue: prepare several pictures, publish them in one go.
+- Named presets, beside the values carried over from the last post.
