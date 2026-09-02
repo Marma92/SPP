@@ -39,6 +39,12 @@ came from, and typing over it is the whole interaction. On a digital frame the
 film fields disappear entirely: the EXIF ticks the box, you untick it whenever
 it guessed wrong.
 
+**Remembers, and offers it back.** Every camera, lens, film, lab, scanner and
+place ever typed is kept and suggested as you type — three letters find a film
+you last used months ago, and it survives closing the app. A combination worth
+returning to can be saved as a named preset: tick what it should carry, name
+it, and start from it next time at the top of the form.
+
 **Fails one platform at a time.** A platform that is down, unconfigured, or
 missing its client library never takes the others with it. The window greys it
 out and says why before you start, and a platform that fails during the run
@@ -118,7 +124,9 @@ libs/
   post.py         one Post object: the picture and everything said about it
   images.py       resizing, EXIF orientation, per-platform size caps
   exif.py         camera, lens, date and GPS read back from the file
-  lastpost.py     film, lab and scanner carried over
+  lastpost.py     film, lab and scanner carried over from the last post
+  vocabulary.py   every value ever typed, for completion
+  presets.py      named sets of values worth coming back to
   runner.py       a publishing run, as a stream of events
   publishers/     one module per platform
   gui/            the window; it drives the publishers, it does not duplicate them
@@ -160,16 +168,6 @@ Use the same machine and connection as the browser.
 - **Mastodon and Pixelfed.** Documented public APIs, no application to file:
   the cheapest platforms left to add.
 - **Facebook.** Wanted since the very first todo list, never actually wired up.
-
-### Composing a post
-
-- **Remember what has been typed, and suggest it back.** Every camera, lens,
-  film, lab and scanner ever entered goes into a list that survives closing the
-  app; typing `Ilf` offers `Ilford Delta 100`. A superset of the values already
-  carried over from the last post, which only remembers the most recent one.
-- **Save as preset.** A button opening a small dialog: name the preset, tick
-  the fields it should carry, save. Recalled from a list when composing —
-  a body and a film you come back to, rather than whatever you did last.
 
 ### Shipping a 1.0
 

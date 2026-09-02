@@ -10,10 +10,13 @@ import re
 from pathlib import Path
 
 from PIL import Image
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QStringListModel
 from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import (
     QCheckBox,
+    QComboBox,
+    QCompleter,
+    QDialog,
     QFrame,
     QHBoxLayout,
     QLabel,
@@ -28,8 +31,9 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from libs import exif, lastpost
+from libs import exif, lastpost, presets, vocabulary
 from libs.gui import theme
+from libs.gui.presetdialog import SavePresetDialog
 from libs.gui.publishing import PublishDialog
 from libs.gui.widgets import DropArea, Field, SegmentedBar, label, section
 from libs.gui.workers import PrepareWorker, PublishWorker
@@ -96,6 +100,9 @@ class MainWindow(QMainWindow):
         self.source_size = None
         self.hints = exif.ExifHints()
         self.remembered = lastpost.load()
+        self.vocabulary = vocabulary.load()
+        self.completions = {}
+        self.presets = presets.load()
         self._worker = None
 
         self.setWindowTitle("SPP — Simple Photo Poster")
@@ -246,6 +253,18 @@ class MainWindow(QMainWindow):
         box.setContentsMargins(20, 18, 20, 18)
         box.setSpacing(7)
 
+        # Starting from a preset comes before filling anything in, so it sits
+        # at the top rather than buried under the form.
+        chooser = QHBoxLayout()
+        chooser.setSpacing(10)
+        self.preset_box = QComboBox()
+        self.preset_box.activated.connect(self._apply_preset)
+        self.preset_save = QPushButton("Save as preset")
+        self.preset_save.clicked.connect(self._save_preset)
+        chooser.addWidget(self.preset_box, 1)
+        chooser.addWidget(self.preset_save)
+        box.addLayout(chooser)
+
         collected = []
         self.f_title = self._line("Title", collected)
         legend = QPlainTextEdit()
@@ -298,9 +317,82 @@ class MainWindow(QMainWindow):
         box.addWidget(self.f_usertag)
         box.addStretch(1)
 
+        self._refresh_presets()
+
+        for key, field in (
+            ("camera", self.f_camera),
+            ("lens", self.f_lens),
+            ("film", self.f_film),
+            ("lab", self.f_lab),
+            ("scan", self.f_scan),
+            ("location", self.f_location),
+        ):
+            self._complete(key, field)
+
         area.setWidget(holder)
         outer.addWidget(area)
         return pane
+
+    def _preset_fields(self):
+        return {
+            "camera": self.f_camera,
+            "lens": self.f_lens,
+            "film": self.f_film,
+            "lab": self.f_lab,
+            "scan": self.f_scan,
+            "tags": self.f_tags,
+            "location": self.f_location,
+        }
+
+    def _refresh_presets(self):
+        self.presets = presets.load()
+        self.preset_box.clear()
+        self.preset_box.addItem("Start from a preset…")
+        self.preset_box.addItems(list(self.presets))
+        self.preset_box.setEnabled(bool(self.presets))
+
+    def _apply_preset(self, index):
+        if index <= 0:
+            return
+        values = self.presets.get(self.preset_box.itemText(index), {})
+        # A preset carrying a film is a film preset: bring those fields back
+        # into view before writing into them.
+        if any(values.get(field) for field in ("film", "lab", "scan")):
+            self.digital.setChecked(False)
+        for name, field in self._preset_fields().items():
+            if values.get(name):
+                field.widget.setText(values[name])
+                field.flag("preset")
+        self.preset_box.setCurrentIndex(0)
+        self._on_edit()
+
+    def _save_preset(self):
+        self._sync_post()
+        values = {
+            name: getattr(self.post, name, "") for name in self._preset_fields()
+        }
+        dialog = SavePresetDialog(values, self.presets, self)
+        if dialog.exec() != QDialog.Accepted:
+            return
+        name, chosen = dialog.chosen()
+        presets.save(name, chosen)
+        self._refresh_presets()
+
+    def _complete(self, key, field):
+        """Offer back everything already typed into this field, in any post."""
+        model = QStringListModel(self.vocabulary.get(key, []), self)
+        completer = QCompleter(model, self)
+        completer.setCaseSensitivity(Qt.CaseInsensitive)
+        # Contains, not starts-with: "delta" should find "Ilford Delta 100".
+        completer.setFilterMode(Qt.MatchContains)
+        completer.setCompletionMode(QCompleter.PopupCompletion)
+        field.widget.setCompleter(completer)
+        self.completions[key] = model
+
+    def _refresh_completions(self):
+        self.vocabulary = vocabulary.load()
+        for key, model in self.completions.items():
+            model.setStringList(self.vocabulary.get(key, []))
 
     def _pair(self, left, right):
         row = QHBoxLayout()
@@ -370,6 +462,8 @@ class MainWindow(QMainWindow):
         self.post = Post(filepath=picture)
         self.hints = exif.read(picture)
         self.remembered = lastpost.load()
+        self._refresh_completions()
+        self._refresh_presets()
         self.images = {}
         self.pixmaps = {}
         self.metas = {}
@@ -555,6 +649,9 @@ class MainWindow(QMainWindow):
             else "Publish"
         )
         self.publish_button.setEnabled(bool(chosen) and self.post is not None)
+        self.preset_save.setEnabled(
+            any(getattr(self.post, name, "") for name in self._preset_fields())
+        )
 
     def _set_ready(self, ready):
         """Nothing can be published before a picture is in."""
@@ -576,3 +673,5 @@ class MainWindow(QMainWindow):
         worker.finished.connect(dialog.on_finished)
         worker.start()
         dialog.exec()
+        # Whatever went out is now worth suggesting next time.
+        self._refresh_completions()

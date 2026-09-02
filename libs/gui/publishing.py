@@ -12,7 +12,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from libs import lastpost, runner
+from libs import lastpost, runner, vocabulary
 from libs.gui import theme
 from libs.gui.widgets import label, rule
 from libs.gui.workers import PublishWorker
@@ -185,8 +185,9 @@ class PublishDialog(QDialog):
     def on_finished(self):
         """Called once a worker thread has run out of platforms."""
         if not self._dry_run and self._successes:
-            # Only a post that actually went out is worth carrying over.
+            # Only a post that actually went out is worth remembering.
             lastpost.save(self._post)
+            vocabulary.remember(self._post)
         self.close_button.setText("Close")
         self.note.setText(
             "%d platform(s) failed — the others went out." % self._failures

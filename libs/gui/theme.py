@@ -50,6 +50,7 @@ QLabel[role="title"] {{ font-size: 21px; color: {text}; }}
 QLabel[role="badge"] {{ font-size: 9px; letter-spacing: 1px; padding: 2px 5px;
     border-radius: 3px; color: {info}; background: rgba(111,176,178,0.13); }}
 QLabel[role="badge"][kind="last"] {{ color: #9a8f82; background: rgba(154,143,130,0.13); }}
+QLabel[role="badge"][kind="preset"] {{ color: {accent}; background: rgba(227,162,74,0.14); }}
 QLabel[role="counter"] {{ font-family: {mono}; font-size: 11px; color: {muted};
     background: #241f1c; border: 1px solid {border}; border-radius: 4px; padding: 2px 7px; }}
 QLabel[role="counter"][over="true"] {{ color: {danger}; background: rgba(224,139,118,0.12);
@@ -82,6 +83,16 @@ QCheckBox:disabled {{ color: {ghost}; }}
 
 QProgressBar {{ background: #322d27; border: none; border-radius: 2px; max-height: 4px; }}
 QProgressBar::chunk {{ background: {accent}; border-radius: 2px; }}
+
+/* The completion popup, so a suggestion list does not arrive looking foreign. */
+QAbstractItemView {{ background: #2a2622; color: {text_dim}; border: 1px solid {border_hi};
+    border-radius: 5px; outline: none; padding: 2px;
+    selection-background-color: #37312a; selection-color: {text}; }}
+
+QComboBox {{ background: {field}; border: 1px solid {border}; border-radius: 5px;
+    padding: 4px 9px; color: {text_dim}; }}
+QComboBox:hover {{ border-color: {border_hi}; }}
+QComboBox::drop-down {{ border: none; width: 18px; }}
 
 QScrollArea {{ border: none; }}
 QScrollBar:vertical {{ background: transparent; width: 8px; margin: 0; }}

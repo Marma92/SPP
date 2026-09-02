@@ -4,7 +4,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from libs import config, exif, lastpost, publishers, runner
+from libs import config, exif, lastpost, publishers, runner, vocabulary
 from libs.post import Post
 
 
@@ -121,6 +121,7 @@ def main(argv=None):
 
     if not args.dry_run and any(ok for _, ok, _ in results):
         lastpost.save(post)
+        vocabulary.remember(post)
     return 0 if all(ok for _, ok, _ in results) else 1
 
 
