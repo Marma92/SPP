@@ -23,6 +23,11 @@ def collect(picture=None):
 
     hints = exif.read(post.filepath)
     remembered = lastpost.load()
+    if hints.digital:
+        # The EXIF says a camera took this, so proposing a film and a lab would
+        # only give you something to delete. The questions are still asked, in
+        # case the guess was wrong -- the window has a box for the same choice.
+        remembered = dict.fromkeys(remembered, "")
     if hints.filled():
         print("Read from the EXIF: %s -- press enter to keep what is proposed."
               % ", ".join(hints.filled()))
