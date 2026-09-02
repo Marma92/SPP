@@ -14,7 +14,12 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
+if getattr(sys, "frozen", False):
+    # Bundled: there is no checkout. What sits beside the executable is the
+    # closest thing to one, which is where a portable .env would go.
+    PROJECT_ROOT = Path(sys.executable).resolve().parent
+else:
+    PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 
 def _data_dir():
