@@ -10,10 +10,11 @@ import re
 from pathlib import Path
 
 from PIL import Image
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QStringListModel
 from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import (
     QCheckBox,
+    QCompleter,
     QFrame,
     QHBoxLayout,
     QLabel,
@@ -28,7 +29,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from libs import exif, lastpost
+from libs import exif, lastpost, vocabulary
 from libs.gui import theme
 from libs.gui.publishing import PublishDialog
 from libs.gui.widgets import DropArea, Field, SegmentedBar, label, section
@@ -96,6 +97,8 @@ class MainWindow(QMainWindow):
         self.source_size = None
         self.hints = exif.ExifHints()
         self.remembered = lastpost.load()
+        self.vocabulary = vocabulary.load()
+        self.completions = {}
         self._worker = None
 
         self.setWindowTitle("SPP — Simple Photo Poster")
@@ -298,9 +301,35 @@ class MainWindow(QMainWindow):
         box.addWidget(self.f_usertag)
         box.addStretch(1)
 
+        for key, field in (
+            ("camera", self.f_camera),
+            ("lens", self.f_lens),
+            ("film", self.f_film),
+            ("lab", self.f_lab),
+            ("scan", self.f_scan),
+            ("location", self.f_location),
+        ):
+            self._complete(key, field)
+
         area.setWidget(holder)
         outer.addWidget(area)
         return pane
+
+    def _complete(self, key, field):
+        """Offer back everything already typed into this field, in any post."""
+        model = QStringListModel(self.vocabulary.get(key, []), self)
+        completer = QCompleter(model, self)
+        completer.setCaseSensitivity(Qt.CaseInsensitive)
+        # Contains, not starts-with: "delta" should find "Ilford Delta 100".
+        completer.setFilterMode(Qt.MatchContains)
+        completer.setCompletionMode(QCompleter.PopupCompletion)
+        field.widget.setCompleter(completer)
+        self.completions[key] = model
+
+    def _refresh_completions(self):
+        self.vocabulary = vocabulary.load()
+        for key, model in self.completions.items():
+            model.setStringList(self.vocabulary.get(key, []))
 
     def _pair(self, left, right):
         row = QHBoxLayout()
@@ -370,6 +399,7 @@ class MainWindow(QMainWindow):
         self.post = Post(filepath=picture)
         self.hints = exif.read(picture)
         self.remembered = lastpost.load()
+        self._refresh_completions()
         self.images = {}
         self.pixmaps = {}
         self.metas = {}
@@ -576,3 +606,5 @@ class MainWindow(QMainWindow):
         worker.finished.connect(dialog.on_finished)
         worker.start()
         dialog.exec()
+        # Whatever went out is now worth suggesting next time.
+        self._refresh_completions()

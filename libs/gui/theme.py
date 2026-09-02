@@ -83,6 +83,11 @@ QCheckBox:disabled {{ color: {ghost}; }}
 QProgressBar {{ background: #322d27; border: none; border-radius: 2px; max-height: 4px; }}
 QProgressBar::chunk {{ background: {accent}; border-radius: 2px; }}
 
+/* The completion popup, so a suggestion list does not arrive looking foreign. */
+QAbstractItemView {{ background: #2a2622; color: {text_dim}; border: 1px solid {border_hi};
+    border-radius: 5px; outline: none; padding: 2px;
+    selection-background-color: #37312a; selection-color: {text}; }}
+
 QScrollArea {{ border: none; }}
 QScrollBar:vertical {{ background: transparent; width: 8px; margin: 0; }}
 QScrollBar::handle:vertical {{ background: #3a352f; border-radius: 4px; min-height: 30px; }}
