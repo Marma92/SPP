@@ -10,11 +10,11 @@ import re
 from pathlib import Path
 
 from PIL import Image
-from PySide6.QtCore import Qt, QStringListModel
-from PySide6.QtGui import QPixmap
+from PySide6.QtCore import QSize, Qt, QStringListModel
+from PySide6.QtGui import QAction, QIcon, QPixmap
 from PySide6.QtWidgets import (
     QCheckBox,
-    QComboBox,
+    QGraphicsOpacityEffect,
     QCompleter,
     QDialog,
     QFrame,
@@ -22,6 +22,8 @@ from PySide6.QtWidgets import (
     QLabel,
     QLineEdit,
     QMainWindow,
+    QFileDialog,
+    QMenu,
     QPlainTextEdit,
     QPushButton,
     QScrollArea,
@@ -36,13 +38,25 @@ from libs.gui import theme
 from libs.gui.presetdialog import SavePresetDialog
 from libs.gui.settingsdialog import SettingsDialog
 from libs.gui.publishing import PublishDialog
-from libs.gui.widgets import DropArea, Field, SegmentedBar, label, section
+from libs.gui import logos
+from libs.gui.widgets import (
+    PICTURE_FILTER,
+    DropArea,
+    Field,
+    SegmentedBar,
+    ToggleSwitch,
+    label,
+    section,
+)
 from libs.gui.workers import PrepareWorker, PublishWorker
 from libs.post import Post
 
 PREVIEW_PANE = 620
 PREVIEW_BOX = (578, 318)
 TAG_PATTERN = re.compile(r"(#\w+)")
+
+# How full a caption must be before its counter is worth showing.
+CROWDED = 0.8
 
 
 def escape(text):
@@ -83,13 +97,6 @@ def repolish(widget):
     widget.style().polish(widget)
 
 
-def dot(color):
-    marker = QFrame()
-    marker.setFixedSize(6, 6)
-    marker.setStyleSheet("background: %s; border-radius: 3px;" % color)
-    return marker
-
-
 class MainWindow(QMainWindow):
     def __init__(self, publishers):
         super().__init__()
@@ -104,7 +111,9 @@ class MainWindow(QMainWindow):
         self.vocabulary = vocabulary.load()
         self.completions = {}
         self.presets = presets.load()
-        self.chips = {}
+        # A post has gone out and is still on screen. The next picture is what
+        # ends it, not the publishing.
+        self.published = False
         self._worker = None
 
         self.setWindowTitle("SPP — Simple Photo Poster")
@@ -129,6 +138,11 @@ class MainWindow(QMainWindow):
     # ------------------------------------------------------------------ build
 
     def _build_chrome(self):
+        """The picture's name, and the way into the settings. Nothing else.
+
+        The wordmark said what the title bar already says, and a row of status
+        chips repeated what the footer now shows plainly.
+        """
         bar = QFrame()
         bar.setObjectName("chrome")
         bar.setFixedHeight(52)
@@ -136,36 +150,38 @@ class MainWindow(QMainWindow):
         box.setContentsMargins(20, 0, 20, 0)
         box.setSpacing(12)
 
-        box.addWidget(label("SPP", "wordmark"))
-        divider = QFrame()
-        divider.setFixedSize(1, 16)
-        divider.setStyleSheet("background: #3a352f;")
-        box.addWidget(divider)
-
         self.filename = label("Simple Photo Poster", "mono")
         self.filename.setStyleSheet("color: %s; font-size: 12px;" % theme.TEXT_DIM)
         box.addWidget(self.filename)
+
+        self.change_button = QPushButton("Change…")
+        self.change_button.setObjectName("quiet")
+        self.change_button.setCursor(Qt.PointingHandCursor)
+        self.change_button.setToolTip("Post a different picture, or fix the wrong one")
+        self.change_button.clicked.connect(self._choose_photo)
+        self.change_button.hide()
+        box.addWidget(self.change_button)
         box.addStretch(1)
 
-        for publisher in self.publishers:
-            reason = publisher.unavailable()
-            chip = QWidget()
-            row = QHBoxLayout(chip)
-            row.setContentsMargins(0, 0, 0, 0)
-            row.setSpacing(6)
-            marker = dot(theme.OK if reason is None else "#4a443c")
-            name = label(publisher.name, "mono")
-            name.setToolTip(reason or "ready")
-            row.addWidget(marker)
-            row.addWidget(name)
-            self.chips[publisher.name] = (marker, name)
-            box.addWidget(chip)
-            box.addSpacing(10)
-
-        self.settings_button = QPushButton("Settings")
+        self.settings_button = QPushButton()
+        self.settings_button.setObjectName("icon")
+        self.settings_button.setIcon(QIcon(logos.pixmap(logos.GEAR, 34, theme.MUTED)))
+        self.settings_button.setIconSize(QSize(17, 17))
+        self.settings_button.setFixedSize(30, 30)
+        self.settings_button.setToolTip("Settings")
+        self.settings_button.setCursor(Qt.PointingHandCursor)
         self.settings_button.clicked.connect(self._open_settings)
         box.addWidget(self.settings_button)
         return bar
+
+    def _choose_photo(self):
+        """Swap the picture without restarting: a second post, or a misclick."""
+        path, _ = QFileDialog.getOpenFileName(
+            self, "Choose a picture", str(self.post.filepath.parent) if self.post else "",
+            PICTURE_FILTER,
+        )
+        if path:
+            self.load_photo(path)
 
     def _open_settings(self):
         if SettingsDialog(self).exec() == QDialog.Accepted:
@@ -175,23 +191,19 @@ class MainWindow(QMainWindow):
         """Credentials may have just changed: ask every platform again."""
         for publisher in self.publishers:
             reason = publisher.unavailable()
-            marker, name = self.chips[publisher.name]
-            marker.setStyleSheet(
-                "background: %s; border-radius: 3px;"
-                % (theme.OK if reason is None else "#4a443c")
-            )
-            name.setToolTip(reason or "ready")
+            hint = reason or "Post to %s" % publisher.name.capitalize()
 
-            check = self.checks[publisher.name]
-            became_usable = reason is None and not check.isEnabled()
-            check.setEnabled(reason is None)
-            check.setToolTip(reason or "")
+            switch = self.checks[publisher.name]
+            became_usable = reason is None and not switch.isEnabled()
+            switch.setEnabled(reason is None)
+            switch.setToolTip(hint)
+            self.counters[publisher.name].setToolTip(hint)
             if reason is not None:
-                check.setChecked(False)
+                switch.setChecked(False)
             elif became_usable:
-                # Newly configured: tick it. One left unticked on purpose stays
-                # that way.
-                check.setChecked(True)
+                # Newly configured: switch it on. One turned off on purpose
+                # stays off.
+                switch.setChecked(True)
         self._refresh_footer()
 
     def _build_drop_page(self):
@@ -251,7 +263,7 @@ class MainWindow(QMainWindow):
         box.addWidget(frame)
 
         head = QHBoxLayout()
-        head.addWidget(label("CAPTION AS POSTED", "label"))
+        head.addWidget(label("Caption as posted", "label"))
         head.addStretch(1)
         self.counter = label("", "counter", over="false")
         head.addWidget(self.counter)
@@ -291,16 +303,19 @@ class MainWindow(QMainWindow):
         box.setContentsMargins(20, 18, 20, 18)
         box.setSpacing(7)
 
-        # Starting from a preset comes before filling anything in, so it sits
-        # at the top rather than buried under the form.
+        # One quiet control where a full-width combo and a solid button used to
+        # sit: presets are reached now and then, not on every post.
+        self.preset_button = QPushButton("Presets")
+        self.preset_button.setObjectName("quiet")
+        self.preset_button.setCursor(Qt.PointingHandCursor)
+        # Owned by the button it belongs to rather than by the window.
+        self.preset_menu = QMenu(self.preset_button)
+        self.preset_menu.aboutToShow.connect(self._fill_preset_menu)
+        self.preset_button.setMenu(self.preset_menu)
+
         chooser = QHBoxLayout()
-        chooser.setSpacing(10)
-        self.preset_box = QComboBox()
-        self.preset_box.activated.connect(self._apply_preset)
-        self.preset_save = QPushButton("Save as preset")
-        self.preset_save.clicked.connect(self._save_preset)
-        chooser.addWidget(self.preset_box, 1)
-        chooser.addWidget(self.preset_save)
+        chooser.addStretch(1)
+        chooser.addWidget(self.preset_button)
         box.addLayout(chooser)
 
         collected = []
@@ -384,24 +399,37 @@ class MainWindow(QMainWindow):
 
     def _refresh_presets(self):
         self.presets = presets.load()
-        self.preset_box.clear()
-        self.preset_box.addItem("Start from a preset…")
-        self.preset_box.addItems(list(self.presets))
-        self.preset_box.setEnabled(bool(self.presets))
 
-    def _apply_preset(self, index):
-        if index <= 0:
+    def _fill_preset_menu(self):
+        """Built when opened, so it always shows what is on disk right now."""
+        self.preset_menu.clear()
+        for name in self.presets:
+            action = QAction(name, self.preset_menu)
+            action.triggered.connect(lambda _=False, chosen=name: self._apply_preset(chosen))
+            self.preset_menu.addAction(action)
+        if self.presets:
+            self.preset_menu.addSeparator()
+
+        save = QAction("Save as preset…", self.preset_menu)
+        save.triggered.connect(self._save_preset)
+        save.setEnabled(
+            self.post is not None
+            and any(getattr(self.post, name, "") for name in self._preset_fields())
+        )
+        self.preset_menu.addAction(save)
+
+    def _apply_preset(self, name):
+        values = self.presets.get(name, {})
+        if not values:
             return
-        values = self.presets.get(self.preset_box.itemText(index), {})
         # A preset carrying a film is a film preset: bring those fields back
         # into view before writing into them.
         if any(values.get(field) for field in ("film", "lab", "scan")):
             self.digital.setChecked(False)
-        for name, field in self._preset_fields().items():
-            if values.get(name):
-                field.widget.setText(values[name])
+        for field_name, field in self._preset_fields().items():
+            if values.get(field_name):
+                field.widget.setText(values[field_name])
                 field.flag("preset")
-        self.preset_box.setCurrentIndex(0)
         self._on_edit()
 
     def _save_preset(self):
@@ -445,31 +473,44 @@ class MainWindow(QMainWindow):
         bar.setFixedHeight(64)
         box = QHBoxLayout(bar)
         box.setContentsMargins(20, 0, 20, 0)
-        box.setSpacing(22)
+        box.setSpacing(20)
 
         self.checks = {}
         self.counters = {}
+        self.marks = {}
         for publisher in self.publishers:
             # A platform whose client library is missing, or whose credentials
-            # are not in .env, cannot be ticked -- and says why on hover.
+            # are absent, cannot be switched on -- and says why on hover.
             reason = publisher.unavailable()
-            check = QCheckBox(publisher.name.capitalize())
-            check.setChecked(reason is None)
-            check.setEnabled(reason is None)
-            check.setToolTip(reason or "")
-            check.toggled.connect(self._on_edit)
+            hint = reason or "Post to %s" % publisher.name.capitalize()
+
+            mark = QLabel()
+            mark.setPixmap(logos.platform(publisher.name, 19, theme.TEXT_DIM))
+            mark.setToolTip(hint)
+            mark.setFixedWidth(19)
+            # An effect rather than a second colour: it fades Flickr's blue and
+            # pink along with the monochrome marks, in one rule.
+            fade = QGraphicsOpacityEffect(mark)
+            mark.setGraphicsEffect(fade)
+            self.marks[publisher.name] = fade
+
+            switch = ToggleSwitch()
+            switch.setChecked(reason is None)
+            switch.setEnabled(reason is None)
+            switch.setToolTip(hint)
+            switch.toggled.connect(self._on_edit)
+
             counter = label("", "mono")
-            if reason is not None:
-                counter.setText("unavailable")
-                counter.setToolTip(reason)
-            self.checks[publisher.name] = check
+            counter.setToolTip(hint)
+            self.checks[publisher.name] = switch
             self.counters[publisher.name] = counter
 
             group = QWidget()
             row = QHBoxLayout(group)
             row.setContentsMargins(0, 0, 0, 0)
             row.setSpacing(9)
-            row.addWidget(check)
+            row.addWidget(mark)
+            row.addWidget(switch)
             row.addWidget(counter)
             box.addWidget(group)
 
@@ -497,6 +538,15 @@ class MainWindow(QMainWindow):
         if not picture.is_file():
             return
 
+        # A worker still preparing the previous picture would otherwise deliver
+        # it into this post's images, and that is what would be uploaded.
+        if self._worker is not None:
+            try:
+                self._worker.ready.disconnect(self._image_ready)
+                self._worker.failed.disconnect(self._image_failed)
+            except (RuntimeError, TypeError):
+                pass
+
         self.post = Post(filepath=picture)
         self.hints = exif.read(picture)
         self.remembered = lastpost.load()
@@ -512,6 +562,16 @@ class MainWindow(QMainWindow):
             self.source_size = None
 
         self.filename.setText(picture.name)
+        self.change_button.show()
+
+        if self.published:
+            # The previous frame went out and this is a different one, so its
+            # title, legend and alt text belonged to it. The gear, tags and
+            # place stay: the next frame is usually from the same session.
+            for field in (self.f_title, self.f_legend, self.f_alt):
+                field.widget.clear()
+            self.published = False
+
         self._fill_form()
         # The EXIF only proposes; the box stays the photographer's to untick.
         self.digital.setChecked(self.hints.digital)
@@ -527,18 +587,32 @@ class MainWindow(QMainWindow):
         self._on_edit()
 
     def _fill_form(self):
-        for field, value, kind in (
-            (self.f_camera, self.hints.camera, "exif"),
-            (self.f_lens, self.hints.lens, "exif"),
-            (self.f_date, self.hints.date, "exif"),
-            (self.f_lat, self.hints.lat, "exif"),
-            (self.f_lng, self.hints.lng, "exif"),
-            (self.f_film, self.remembered["film"], "last"),
-            (self.f_lab, self.remembered["lab"], "last"),
-            (self.f_scan, self.remembered["scan"], "last"),
+        """Propose what the new picture knows, without erasing what you typed.
+
+        Camera, lens, date and coordinates belong to the file, so a new file
+        replaces them. Film, lab and scanner belong to the session rather than
+        the frame: they are only offered into a field left empty, or the roll
+        you typed by hand would vanish on the next picture.
+        """
+        for field, value in (
+            (self.f_camera, self.hints.camera),
+            (self.f_lens, self.hints.lens),
+            (self.f_date, self.hints.date),
+            (self.f_lat, self.hints.lat),
+            (self.f_lng, self.hints.lng),
         ):
             field.widget.setText(value)
-            field.flag(kind if value else None)
+            field.flag("exif" if value else None)
+
+        for field, value in (
+            (self.f_film, self.remembered["film"]),
+            (self.f_lab, self.remembered["lab"]),
+            (self.f_scan, self.remembered["scan"]),
+        ):
+            if field.widget.text():
+                continue
+            field.widget.setText(value)
+            field.flag("last" if value else None)
 
     def _on_digital(self, digital):
         """A digital frame has no film, no lab and no scanner: hide all three.
@@ -666,6 +740,9 @@ class MainWindow(QMainWindow):
         for publisher in self.publishers:
             counter = self.counters[publisher.name]
             check = self.checks[publisher.name]
+            self.marks[publisher.name].setOpacity(
+                1.0 if check.isChecked() and check.isEnabled() else 0.32
+            )
             if not check.isEnabled():
                 counter.setText("unavailable")
                 continue
@@ -677,9 +754,15 @@ class MainWindow(QMainWindow):
                 counter.setText("")
                 continue
             used = publisher.measure(caption)
+            over = used > publisher.limit
+            # Five counters reading far below their limit are five things to
+            # ignore. It speaks when the caption is close, and shouts when past.
+            if not over and used < publisher.limit * CROWDED:
+                counter.setText("")
+                continue
             counter.setText("%d / %d" % (used, publisher.limit))
             counter.setStyleSheet(
-                "color: %s;" % (theme.DANGER if used > publisher.limit else theme.MUTED)
+                "color: %s;" % (theme.DANGER if over else theme.MUTED)
             )
         self.publish_button.setText(
             "Publish to %d platform%s" % (chosen, "" if chosen == 1 else "s")
@@ -687,9 +770,6 @@ class MainWindow(QMainWindow):
             else "Publish"
         )
         self.publish_button.setEnabled(bool(chosen) and self.post is not None)
-        self.preset_save.setEnabled(
-            any(getattr(self.post, name, "") for name in self._preset_fields())
-        )
 
     def _set_ready(self, ready):
         """Nothing can be published before a picture is in."""
@@ -713,3 +793,6 @@ class MainWindow(QMainWindow):
         dialog.exec()
         # Whatever went out is now worth suggesting next time.
         self._refresh_completions()
+        # Noted, not acted on: what was just published stays on screen to be
+        # read back. Choosing the next picture is what closes the post.
+        self.published = self.published or dialog.posted

@@ -60,7 +60,7 @@ class SettingsDialog(QDialog):
         for heading, group in settings.GROUPS:
             fields.addWidget(section(heading))
             for name, caption, secret in group:
-                fields.addWidget(label(caption.upper(), "label"))
+                fields.addWidget(label(caption, "label"))
                 widget = QLineEdit(current.get(name, ""))
                 if secret:
                     widget.setEchoMode(QLineEdit.Password)
