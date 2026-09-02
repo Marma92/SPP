@@ -158,7 +158,6 @@ Use the same machine and connection as the browser.
   full recompose.
 - **A queue.** Prepare several pictures, then publish them in one go, rather
   than one window session per photograph.
-- **Scheduled posts.** Compose now, publish at a chosen time.
 
 ### Composing a post
 
@@ -212,6 +211,13 @@ Use the same machine and connection as the browser.
   URL. And letting anyone else sign in with their own account needs Advanced
   Access, which means App Review and business verification. Worth checking at
   the same time whether the location and the user tag survive the move.
+- **Scheduled posts.** Publishing at six in the evening means something has to
+  be running at six in the evening. Either the window stays open, which is not
+  really scheduling, or it takes a headless mode, a queue that outlives a
+  restart, a system task to wake it, and somewhere for a failure to be seen
+  when nobody is watching. It builds on top of the queue rather than beside it,
+  and it is the heaviest item here — which is why it comes after 1.0 rather
+  than in it.
 
 ## License
 
