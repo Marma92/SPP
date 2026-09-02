@@ -65,6 +65,13 @@ class SettingsDialog(QDialog):
                     widget.setEchoMode(QLineEdit.Password)
                 fields.addWidget(widget)
                 self._inputs[name] = widget
+                if name == "INSTAGRAM_SESSIONID":
+                    self.sign_in = QPushButton("Sign in to Instagram…")
+                    self.sign_in.setToolTip(
+                        "Sign in here and the session is captured for you"
+                    )
+                    self.sign_in.clicked.connect(self._sign_in)
+                    fields.addWidget(self.sign_in)
         fields.addStretch(1)
 
         area.setWidget(holder)
@@ -88,6 +95,26 @@ class SettingsDialog(QDialog):
         box.addLayout(buttons)
 
         outer.addWidget(card)
+
+    def _sign_in(self):
+        """Host Instagram's own login, and keep the session it hands out.
+
+        Imported here rather than at the top: Qt WebEngine is a heavy import,
+        and the rest of the screen has no use for it.
+        """
+        try:
+            from libs.gui.instagramlogin import InstagramLoginDialog
+        except ImportError as error:
+            self.sign_in.setEnabled(False)
+            self.sign_in.setText("Sign in unavailable — %s" % error)
+            return
+
+        dialog = InstagramLoginDialog(self)
+        if dialog.exec() == QDialog.Accepted and dialog.session_id:
+            self._inputs["INSTAGRAM_SESSIONID"].setText(dialog.session_id)
+            # The session stands in for the password, so leave no doubt which
+            # of the two is now in use.
+            self._inputs["INSTAGRAM_PASSWORD"].clear()
 
     def _reveal(self, shown):
         for name, _label, secret in (
