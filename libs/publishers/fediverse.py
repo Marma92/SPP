@@ -50,7 +50,7 @@ class FediversePublisher(Publisher):
             media_ids=[media],
             language=config.POST_LANGS[0] if config.POST_LANGS else None,
         )
-        return status["url"] or "%s/@me" % auth.instance
+        return status.get("url") or "%s/@me" % auth.instance
 
 
 class MastodonPublisher(FediversePublisher):

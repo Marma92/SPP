@@ -74,6 +74,11 @@ Mastodon and Pixelfed speak the same API and share one implementation, so they
 differ only by the server you point them at; both carry alt text and the
 caption language.
 
+Mastodon has been posted to for real. **Pixelfed has not**: it rides the same
+implementation, so the path itself is proven, but its own API compatibility is
+untested — if it refuses a status, the caption language is the first parameter
+to suspect.
+
 Twitter/X was dropped in 2023 along with API v1.1. The publisher is still in the
 history if it is ever worth porting to v2.
 
