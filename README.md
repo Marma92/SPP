@@ -66,4 +66,4 @@ reviving on the v2 API.
 _(paste from todo.txt)_
 
 - More platforms: Mastodon, Pixelfed.
-- GUI (`libs/sppgui.py` is a skeleton, not wired to anything yet).
+- Desktop GUI (PySide6).
