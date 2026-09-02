@@ -7,6 +7,8 @@ git-ignored `.env` file and are only read when a platform is actually used.
 """
 
 import os
+import shutil
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -14,19 +16,59 @@ from dotenv import load_dotenv
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
-# All working folders hang off the project root, not off the current working
-# directory: running `python photopost.py` from anywhere used to scatter files
-# around (the session file was even written to `../sessions/`).
-RESIZE_DIR = PROJECT_ROOT / "resizes"
-INSTAGRAM_DIR = PROJECT_ROOT / "instagram"
-BLUESKY_DIR = PROJECT_ROOT / "bluesky"
-SESSION_DIR = PROJECT_ROOT / "sessions"
-STATE_DIR = PROJECT_ROOT / "state"
+
+def _data_dir():
+    """Where the app may write, whoever installed it and wherever from.
+
+    An app installed under Program Files may not write beside its own
+    executable, so nothing hangs off the project root any more. SPP_DATA_DIR
+    overrides it, which is what tests and a portable install use.
+    """
+    override = os.getenv("SPP_DATA_DIR", "").strip()
+    if override:
+        return Path(override).expanduser()
+    if sys.platform == "win32":
+        base = os.getenv("LOCALAPPDATA") or Path.home() / "AppData" / "Local"
+    elif sys.platform == "darwin":
+        base = Path.home() / "Library" / "Application Support"
+    else:
+        base = os.getenv("XDG_DATA_HOME") or Path.home() / ".local" / "share"
+    return Path(base) / "SPP"
+
+
+DATA_DIR = _data_dir()
+RESIZE_DIR = DATA_DIR / "resizes"
+INSTAGRAM_DIR = DATA_DIR / "instagram"
+BLUESKY_DIR = DATA_DIR / "bluesky"
+SESSION_DIR = DATA_DIR / "sessions"
+STATE_DIR = DATA_DIR / "state"
 INSTAGRAM_SESSION_FILE = SESSION_DIR / "instagram_session.json"
 BLUESKY_SESSION_FILE = SESSION_DIR / "bluesky_session.txt"
 LAST_POST_FILE = STATE_DIR / "last_post.json"
 
-load_dotenv(PROJECT_ROOT / ".env")
+
+def _adopt_clone_data():
+    """Carry an existing clone's sessions and remembered fields over, once.
+
+    Throwing away sessions/ would mean facing Instagram's verification
+    challenge again, so this copies rather than moves, and never overwrites
+    anything already in the data directory. The resized pictures are
+    disposable and are left behind.
+    """
+    for name in ("sessions", "state"):
+        source = PROJECT_ROOT / name
+        target = DATA_DIR / name
+        if source.is_dir() and not target.exists():
+            shutil.copytree(source, target)
+
+
+_adopt_clone_data()
+
+# A clone keeps its .env where it has always been; an installed copy finds one
+# beside its data. The first file found wins, since load_dotenv leaves
+# variables already set alone.
+for _candidate in (DATA_DIR / ".env", PROJECT_ROOT / ".env"):
+    load_dotenv(_candidate)
 
 # Optional default platform selection, e.g. SPP_PLATFORMS=flickr,instagram
 DEFAULT_PLATFORMS = os.getenv("SPP_PLATFORMS", "")

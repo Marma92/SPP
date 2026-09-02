@@ -35,11 +35,15 @@ to know beforehand.
 **Fills in what it can.** Camera, lens, capture date and GPS coordinates come
 from the picture's EXIF. Film, lab and scanner — which no camera writes — are
 carried over from your last post. Every pre-filled field says where its value
-came from, and typing over it is the whole interaction.
+came from, and typing over it is the whole interaction. On a digital frame the
+film fields disappear entirely: the EXIF ticks the box, you untick it whenever
+it guessed wrong.
 
 **Fails one platform at a time.** A platform that is down, unconfigured, or
 missing its client library never takes the others with it. The window greys it
-out and says why before you start; the run reports each platform separately.
+out and says why before you start, and a platform that fails during the run
+keeps a Retry button on its own row — one bad upload never costs you the post
+you just composed.
 
 ## Platforms
 
@@ -77,6 +81,13 @@ Fill in only the platforms you use — the others are simply skipped, with a
 reason shown rather than an error. `SPP_PLATFORMS` narrows the default
 selection, `SPP_LANGS` sets the language your captions are written in
 (defaults to `fr`).
+
+Everything the app writes — platform sessions, the values it remembers, the
+resized pictures — lives outside the project, in a per-user data directory:
+`%LOCALAPPDATA%\SPP` on Windows, `~/Library/Application Support/SPP` on macOS,
+`~/.local/share/SPP` elsewhere. `SPP_DATA_DIR` moves it. An existing clone's
+`sessions/` and `state/` are copied there once, so nobody has to face
+Instagram's verification challenge a second time.
 
 ## Use
 
@@ -150,13 +161,6 @@ Use the same machine and connection as the browser.
   the cheapest platforms left to add.
 - **Facebook.** Wanted since the very first todo list, never actually wired up.
 
-### Publishing
-
-- **Retry a single platform from its row.** When one fails, the run dialog
-  still holds everything needed to try again — the post, and the picture
-  already prepared. A Retry button on that row, instead of a dead end and a
-  full recompose.
-
 ### Composing a post
 
 - **Remember what has been typed, and suggest it back.** Every camera, lens,
@@ -166,21 +170,14 @@ Use the same machine and connection as the browser.
 - **Save as preset.** A button opening a small dialog: name the preset, tick
   the fields it should carry, save. Recalled from a list when composing —
   a body and a film you come back to, rather than whatever you did last.
-- **A digital / film switch.** One checkbox hiding the film, lab and scanner
-  fields, which mean nothing on a digital frame and only crowd the form.
-- **Set that switch from the EXIF.** A file carrying a lens, an aperture and an
-  ISO was almost certainly shot digitally, so the box can start ticked and keep
-  the film fields out of the way. A guess, never a verdict: a scan often
-  carries its *scanner's* EXIF and looks digital, so the box stays yours to
-  untick.
 
 ### Shipping a 1.0
 
-- **A settings screen, and a home under the user's own data directory.**
-  Credentials sit in a `.env` beside the source, which is fine for whoever
-  cloned the repository and impossible for anyone else. They need a screen in
-  the window instead. The same goes for the working folders: a bundled app
-  cannot assume it may write next to its own executable.
+- **A settings screen.** Credentials still sit in a `.env`, fine for whoever
+  cloned the repository and impossible for anyone else: they need a screen in
+  the window instead. Everything else the app writes has already moved to a
+  per-user data directory, so a bundled copy no longer assumes it may write
+  beside its own executable.
 - **Capture the Instagram session in the app.** A Qt WebEngine view on
   Instagram's login page, the challenge completed inside it, and the
   `sessionid` read straight off the cookie store — nobody has to know what a
