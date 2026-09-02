@@ -34,6 +34,7 @@ from PySide6.QtWidgets import (
 from libs import exif, lastpost, presets, vocabulary
 from libs.gui import theme
 from libs.gui.presetdialog import SavePresetDialog
+from libs.gui.settingsdialog import SettingsDialog
 from libs.gui.publishing import PublishDialog
 from libs.gui.widgets import DropArea, Field, SegmentedBar, label, section
 from libs.gui.workers import PrepareWorker, PublishWorker
@@ -103,6 +104,7 @@ class MainWindow(QMainWindow):
         self.vocabulary = vocabulary.load()
         self.completions = {}
         self.presets = presets.load()
+        self.chips = {}
         self._worker = None
 
         self.setWindowTitle("SPP — Simple Photo Poster")
@@ -151,13 +153,46 @@ class MainWindow(QMainWindow):
             row = QHBoxLayout(chip)
             row.setContentsMargins(0, 0, 0, 0)
             row.setSpacing(6)
-            row.addWidget(dot(theme.OK if reason is None else "#4a443c"))
+            marker = dot(theme.OK if reason is None else "#4a443c")
             name = label(publisher.name, "mono")
             name.setToolTip(reason or "ready")
+            row.addWidget(marker)
             row.addWidget(name)
+            self.chips[publisher.name] = (marker, name)
             box.addWidget(chip)
             box.addSpacing(10)
+
+        self.settings_button = QPushButton("Settings")
+        self.settings_button.clicked.connect(self._open_settings)
+        box.addWidget(self.settings_button)
         return bar
+
+    def _open_settings(self):
+        if SettingsDialog(self).exec() == QDialog.Accepted:
+            self._refresh_availability()
+
+    def _refresh_availability(self):
+        """Credentials may have just changed: ask every platform again."""
+        for publisher in self.publishers:
+            reason = publisher.unavailable()
+            marker, name = self.chips[publisher.name]
+            marker.setStyleSheet(
+                "background: %s; border-radius: 3px;"
+                % (theme.OK if reason is None else "#4a443c")
+            )
+            name.setToolTip(reason or "ready")
+
+            check = self.checks[publisher.name]
+            became_usable = reason is None and not check.isEnabled()
+            check.setEnabled(reason is None)
+            check.setToolTip(reason or "")
+            if reason is not None:
+                check.setChecked(False)
+            elif became_usable:
+                # Newly configured: tick it. One left unticked on purpose stays
+                # that way.
+                check.setChecked(True)
+        self._refresh_footer()
 
     def _build_drop_page(self):
         page = QWidget()
