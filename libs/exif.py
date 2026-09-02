@@ -11,6 +11,17 @@ from dataclasses import dataclass
 from PIL import ExifTags, Image
 
 
+# What a camera records and a scanner does not. A film frame carries none of
+# these; a scan that carries one is usually the scanner talking about itself,
+# so two are required before calling a picture digital.
+CAPTURE_TAGS = (
+    ExifTags.Base.LensModel,
+    ExifTags.Base.FNumber,
+    ExifTags.Base.ExposureTime,
+    ExifTags.Base.ISOSpeedRatings,
+)
+
+
 @dataclass
 class ExifHints:
     camera: str = ""
@@ -18,10 +29,15 @@ class ExifHints:
     date: str = ""
     lat: str = ""
     lng: str = ""
+    digital: bool = False
 
     def filled(self):
         """Names of the fields that were actually found, for the summary line."""
-        return [name for name, value in vars(self).items() if value]
+        return [
+            name
+            for name, value in vars(self).items()
+            if isinstance(value, str) and value
+        ]
 
 
 def _text(value):
@@ -71,6 +87,11 @@ def _degrees(values, ref):
     return "%.6f" % decimal
 
 
+def _looks_digital(exif_ifd):
+    """A guess, never a verdict -- the switch it sets is always overridable."""
+    return sum(1 for tag in CAPTURE_TAGS if exif_ifd.get(tag) is not None) >= 2
+
+
 def _coordinates(gps_ifd):
     try:
         latitude = _degrees(
@@ -101,4 +122,5 @@ def read(filepath):
         date=_date(exif_ifd, ifd0),
         lat=latitude,
         lng=longitude,
+        digital=_looks_digital(exif_ifd),
     )

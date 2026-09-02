@@ -51,14 +51,16 @@ def rule():
     return line
 
 
-def section(title):
-    """A section heading with a hairline running out to the right of it."""
+def section(title, trailing=None):
+    """A section heading, its hairline, and optionally a control on the right."""
     row = QWidget()
     box = QHBoxLayout(row)
     box.setContentsMargins(0, 6, 0, 2)
     box.setSpacing(10)
     box.addWidget(label(title.upper(), "section"))
     box.addWidget(rule(), 1)
+    if trailing is not None:
+        box.addWidget(trailing)
     return row
 
 

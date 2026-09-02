@@ -260,7 +260,11 @@ class MainWindow(QMainWindow):
         box.addWidget(self.f_alt)
         box.addWidget(self.f_tags)
 
-        box.addWidget(section("Gear"))
+        self.digital = QCheckBox("Digital")
+        self.digital.setToolTip("Hide the film, lab and scanner fields")
+        self.digital.toggled.connect(self._on_digital)
+        box.addWidget(section("Gear", self.digital))
+
         self.f_camera = self._line("Camera", collected)
         self.f_lens = self._line("Lens", collected)
         self.f_film = self._line("Film", collected)
@@ -269,7 +273,15 @@ class MainWindow(QMainWindow):
         self.f_date = self._line("Date", collected)
         box.addWidget(self.f_camera)
         box.addWidget(self.f_lens)
-        box.addLayout(self._pair(self.f_film, self.f_lab))
+        # Film and lab share a row of their own so the pair can be hidden as one.
+        self.film_row = QWidget()
+        film_box = QHBoxLayout(self.film_row)
+        film_box.setContentsMargins(0, 0, 0, 0)
+        film_box.setSpacing(10)
+        film_box.addWidget(self.f_film, 1)
+        film_box.addWidget(self.f_lab, 1)
+        box.addWidget(self.film_row)
+        # Hiding the scanner simply lets the date take the whole row.
         box.addLayout(self._pair(self.f_scan, self.f_date))
 
         box.addWidget(section("Place"))
@@ -369,6 +381,8 @@ class MainWindow(QMainWindow):
 
         self.filename.setText(picture.name)
         self._fill_form()
+        # The EXIF only proposes; the box stays the photographer's to untick.
+        self.digital.setChecked(self.hints.digital)
         self.pages.setCurrentIndex(1)
         self._set_ready(True)
         self.image.setText("Preparing…")
@@ -393,6 +407,27 @@ class MainWindow(QMainWindow):
         ):
             field.widget.setText(value)
             field.flag(kind if value else None)
+
+    def _on_digital(self, digital):
+        """A digital frame has no film, no lab and no scanner: hide all three.
+
+        They are cleared as well as hidden -- a field nobody can see must not
+        find its way into the caption.
+        """
+        self.film_row.setVisible(not digital)
+        self.f_scan.setVisible(not digital)
+        for field, remembered in (
+            (self.f_film, self.remembered["film"]),
+            (self.f_lab, self.remembered["lab"]),
+            (self.f_scan, self.remembered["scan"]),
+        ):
+            if digital:
+                field.widget.clear()
+                field.flag(None)
+            elif not field.widget.text():
+                field.widget.setText(remembered)
+                field.flag("last" if remembered else None)
+        self._on_edit()
 
     def _image_ready(self, name, path):
         path = Path(path)
