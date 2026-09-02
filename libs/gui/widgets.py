@@ -84,7 +84,7 @@ class Field(QWidget):
         self._head = QHBoxLayout()
         self._head.setContentsMargins(0, 0, 0, 0)
         self._head.setSpacing(7)
-        self._head.addWidget(label(caption.upper(), "label"))
+        self._head.addWidget(label(caption, "label"))
         self._head.addStretch(1)
 
         box.addLayout(self._head)

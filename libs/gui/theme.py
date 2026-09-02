@@ -42,7 +42,7 @@ QFrame#rule {{ background: #302b26; max-height: 1px; border: none; }}
 QLabel {{ background: transparent; }}
 QLabel[role="wordmark"] {{ font-family: {mono}; font-size: 15px; font-weight: 600;
     letter-spacing: 1px; color: {accent}; }}
-QLabel[role="label"] {{ font-size: 10px; letter-spacing: 1px; color: {faint}; }}
+QLabel[role="label"] {{ font-size: 11.5px; color: {faint}; }}
 QLabel[role="section"] {{ font-size: 10px; letter-spacing: 1px; color: {muted}; }}
 QLabel[role="mono"] {{ font-family: {mono}; font-size: 11px; color: {faint}; }}
 QLabel[role="hint"] {{ font-size: 12px; color: {muted}; }}
@@ -101,6 +101,17 @@ QComboBox {{ background: {field}; border: 1px solid {border}; border-radius: 5px
     padding: 4px 9px; color: {text_dim}; }}
 QComboBox:hover {{ border-color: {border_hi}; }}
 QComboBox::drop-down {{ border: none; width: 18px; }}
+
+QMenu {{ background: #2a2622; border: 1px solid {border_hi}; border-radius: 6px;
+    padding: 4px; }}
+QMenu::item {{ padding: 6px 14px; border-radius: 4px; color: {text_dim}; }}
+QMenu::item:selected {{ background: #37312a; color: {text}; }}
+QMenu::item:disabled {{ color: {ghost}; }}
+QMenu::separator {{ height: 1px; background: #302b26; margin: 4px 6px; }}
+
+QPushButton#quiet {{ background: transparent; border: none; color: {muted};
+    padding: 5px 10px; border-radius: 5px; }}
+QPushButton#quiet:hover {{ background: #2f2a24; color: {text_dim}; }}
 
 QScrollArea {{ border: none; }}
 QScrollBar:vertical {{ background: transparent; width: 8px; margin: 0; }}

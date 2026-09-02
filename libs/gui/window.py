@@ -11,11 +11,10 @@ from pathlib import Path
 
 from PIL import Image
 from PySide6.QtCore import QSize, Qt, QStringListModel
-from PySide6.QtGui import QIcon, QPixmap
+from PySide6.QtGui import QAction, QIcon, QPixmap
 from PySide6.QtWidgets import (
     QCheckBox,
     QGraphicsOpacityEffect,
-    QComboBox,
     QCompleter,
     QDialog,
     QFrame,
@@ -23,6 +22,7 @@ from PySide6.QtWidgets import (
     QLabel,
     QLineEdit,
     QMainWindow,
+    QMenu,
     QPlainTextEdit,
     QPushButton,
     QScrollArea,
@@ -241,7 +241,7 @@ class MainWindow(QMainWindow):
         box.addWidget(frame)
 
         head = QHBoxLayout()
-        head.addWidget(label("CAPTION AS POSTED", "label"))
+        head.addWidget(label("Caption as posted", "label"))
         head.addStretch(1)
         self.counter = label("", "counter", over="false")
         head.addWidget(self.counter)
@@ -281,16 +281,18 @@ class MainWindow(QMainWindow):
         box.setContentsMargins(20, 18, 20, 18)
         box.setSpacing(7)
 
-        # Starting from a preset comes before filling anything in, so it sits
-        # at the top rather than buried under the form.
+        # One quiet control where a full-width combo and a solid button used to
+        # sit: presets are reached now and then, not on every post.
+        self.preset_button = QPushButton("Presets")
+        self.preset_button.setObjectName("quiet")
+        self.preset_button.setCursor(Qt.PointingHandCursor)
+        self.preset_menu = QMenu(self)
+        self.preset_menu.aboutToShow.connect(self._fill_preset_menu)
+        self.preset_button.setMenu(self.preset_menu)
+
         chooser = QHBoxLayout()
-        chooser.setSpacing(10)
-        self.preset_box = QComboBox()
-        self.preset_box.activated.connect(self._apply_preset)
-        self.preset_save = QPushButton("Save as preset")
-        self.preset_save.clicked.connect(self._save_preset)
-        chooser.addWidget(self.preset_box, 1)
-        chooser.addWidget(self.preset_save)
+        chooser.addStretch(1)
+        chooser.addWidget(self.preset_button)
         box.addLayout(chooser)
 
         collected = []
@@ -374,24 +376,37 @@ class MainWindow(QMainWindow):
 
     def _refresh_presets(self):
         self.presets = presets.load()
-        self.preset_box.clear()
-        self.preset_box.addItem("Start from a preset…")
-        self.preset_box.addItems(list(self.presets))
-        self.preset_box.setEnabled(bool(self.presets))
 
-    def _apply_preset(self, index):
-        if index <= 0:
+    def _fill_preset_menu(self):
+        """Built when opened, so it always shows what is on disk right now."""
+        self.preset_menu.clear()
+        for name in self.presets:
+            action = QAction(name, self.preset_menu)
+            action.triggered.connect(lambda _=False, chosen=name: self._apply_preset(chosen))
+            self.preset_menu.addAction(action)
+        if self.presets:
+            self.preset_menu.addSeparator()
+
+        save = QAction("Save as preset…", self.preset_menu)
+        save.triggered.connect(self._save_preset)
+        save.setEnabled(
+            self.post is not None
+            and any(getattr(self.post, name, "") for name in self._preset_fields())
+        )
+        self.preset_menu.addAction(save)
+
+    def _apply_preset(self, name):
+        values = self.presets.get(name, {})
+        if not values:
             return
-        values = self.presets.get(self.preset_box.itemText(index), {})
         # A preset carrying a film is a film preset: bring those fields back
         # into view before writing into them.
         if any(values.get(field) for field in ("film", "lab", "scan")):
             self.digital.setChecked(False)
-        for name, field in self._preset_fields().items():
-            if values.get(name):
-                field.widget.setText(values[name])
+        for field_name, field in self._preset_fields().items():
+            if values.get(field_name):
+                field.widget.setText(values[field_name])
                 field.flag("preset")
-        self.preset_box.setCurrentIndex(0)
         self._on_edit()
 
     def _save_preset(self):
@@ -699,9 +714,6 @@ class MainWindow(QMainWindow):
             else "Publish"
         )
         self.publish_button.setEnabled(bool(chosen) and self.post is not None)
-        self.preset_save.setEnabled(
-            any(getattr(self.post, name, "") for name in self._preset_fields())
-        )
 
     def _set_ready(self, ready):
         """Nothing can be published before a picture is in."""

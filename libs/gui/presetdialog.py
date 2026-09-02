@@ -52,7 +52,7 @@ class SavePresetDialog(QDialog):
         title.setStyleSheet("font-size: 15px; font-weight: 600; color: %s;" % theme.TEXT)
         box.addWidget(title)
 
-        box.addWidget(label("NAME", "label"))
+        box.addWidget(label("Name", "label"))
         self.name = QLineEdit()
         self.name.setPlaceholderText("Leica and Portra")
         self.name.textChanged.connect(self._revalidate)
@@ -62,7 +62,7 @@ class SavePresetDialog(QDialog):
         box.addWidget(self.warning)
 
         box.addSpacing(4)
-        box.addWidget(label("WHAT IT CARRIES", "label"))
+        box.addWidget(label("What it carries", "label"))
         box.addWidget(rule())
 
         for field in presets.FIELDS:
