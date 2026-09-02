@@ -40,16 +40,30 @@ PREVIEW_BOX = (578, 318)
 TAG_PATTERN = re.compile(r"(#\w+)")
 
 
+def escape(text):
+    return html.escape(text).replace("\n", "<br>")
+
+
+def with_tags(text):
+    """Colour the hashtags, escaping each piece of the raw text separately.
+
+    Escaping the whole string first would leave entities like &#x27; in it, and
+    the hashtag pattern would then match the #x27 inside one and break it.
+    """
+    parts = []
+    for chunk in TAG_PATTERN.split(text):
+        if not chunk:
+            continue
+        if chunk.startswith("#") and len(chunk) > 1:
+            parts.append('<span style="color:%s">%s</span>' % (theme.ACCENT, escape(chunk)))
+        else:
+            parts.append(escape(chunk))
+    return "".join(parts)
+
+
 def caption_html(kept, dropped):
     """The caption as posted, with whatever the platform drops struck through."""
-
-    def escape(text):
-        return html.escape(text).replace("\n", "<br>")
-
-    body = TAG_PATTERN.sub(
-        lambda match: '<span style="color:%s">%s</span>' % (theme.ACCENT, match.group(1)),
-        escape(kept),
-    )
+    body = with_tags(kept)
     if dropped:
         body += '<span style="color:%s; text-decoration:line-through">%s</span>' % (
             theme.GHOST,
