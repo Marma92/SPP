@@ -22,6 +22,7 @@ from PySide6.QtWidgets import (
     QLabel,
     QLineEdit,
     QMainWindow,
+    QFileDialog,
     QMenu,
     QPlainTextEdit,
     QPushButton,
@@ -39,6 +40,7 @@ from libs.gui.settingsdialog import SettingsDialog
 from libs.gui.publishing import PublishDialog
 from libs.gui import logos
 from libs.gui.widgets import (
+    PICTURE_FILTER,
     DropArea,
     Field,
     SegmentedBar,
@@ -148,6 +150,14 @@ class MainWindow(QMainWindow):
         self.filename = label("Simple Photo Poster", "mono")
         self.filename.setStyleSheet("color: %s; font-size: 12px;" % theme.TEXT_DIM)
         box.addWidget(self.filename)
+
+        self.change_button = QPushButton("Change…")
+        self.change_button.setObjectName("quiet")
+        self.change_button.setCursor(Qt.PointingHandCursor)
+        self.change_button.setToolTip("Post a different picture, or fix the wrong one")
+        self.change_button.clicked.connect(self._choose_photo)
+        self.change_button.hide()
+        box.addWidget(self.change_button)
         box.addStretch(1)
 
         self.settings_button = QPushButton()
@@ -160,6 +170,15 @@ class MainWindow(QMainWindow):
         self.settings_button.clicked.connect(self._open_settings)
         box.addWidget(self.settings_button)
         return bar
+
+    def _choose_photo(self):
+        """Swap the picture without restarting: a second post, or a misclick."""
+        path, _ = QFileDialog.getOpenFileName(
+            self, "Choose a picture", str(self.post.filepath.parent) if self.post else "",
+            PICTURE_FILTER,
+        )
+        if path:
+            self.load_photo(path)
 
     def _open_settings(self):
         if SettingsDialog(self).exec() == QDialog.Accepted:
@@ -515,6 +534,15 @@ class MainWindow(QMainWindow):
         if not picture.is_file():
             return
 
+        # A worker still preparing the previous picture would otherwise deliver
+        # it into this post's images, and that is what would be uploaded.
+        if self._worker is not None:
+            try:
+                self._worker.ready.disconnect(self._image_ready)
+                self._worker.failed.disconnect(self._image_failed)
+            except (RuntimeError, TypeError):
+                pass
+
         self.post = Post(filepath=picture)
         self.hints = exif.read(picture)
         self.remembered = lastpost.load()
@@ -530,6 +558,7 @@ class MainWindow(QMainWindow):
             self.source_size = None
 
         self.filename.setText(picture.name)
+        self.change_button.show()
         self._fill_form()
         # The EXIF only proposes; the box stays the photographer's to untick.
         self.digital.setChecked(self.hints.digital)
@@ -737,3 +766,10 @@ class MainWindow(QMainWindow):
         dialog.exec()
         # Whatever went out is now worth suggesting next time.
         self._refresh_completions()
+
+        if dialog.posted:
+            # What belonged to that one frame goes; the gear, tags and place
+            # stay, because the next frame is usually from the same session.
+            for field in (self.f_title, self.f_legend, self.f_alt):
+                field.widget.clear()
+            self._on_edit()

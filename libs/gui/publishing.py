@@ -107,6 +107,8 @@ class PublishDialog(QDialog):
         self._rows = {}
         self._failures = 0
         self._successes = 0
+        # Read by the window, to know whether to start the next post clean.
+        self.posted = False
         self._total = len(publishers)
 
         outer = QVBoxLayout(self)
@@ -186,6 +188,7 @@ class PublishDialog(QDialog):
         """Called once a worker thread has run out of platforms."""
         if not self._dry_run and self._successes:
             # Only a post that actually went out is worth remembering.
+            self.posted = True
             lastpost.save(self._post)
             vocabulary.remember(self._post)
         self.close_button.setText("Close")
