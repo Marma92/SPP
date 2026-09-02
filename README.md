@@ -71,7 +71,17 @@ the caption language. Instagram posts carry the location and a user tag.
 Twitter/X was dropped in 2023 along with API v1.1. The publisher is still in the
 history if it is ever worth porting to v2.
 
-## Install
+## Download
+
+The Windows build is attached to every
+[release](https://github.com/Marma92/SPP/releases): take the zip, unpack it
+anywhere, run `SPP.exe`. Nothing to install, and no Python needed.
+
+It is unsigned, so Windows SmartScreen will warn about it the first time — More
+info, then Run anyway. Each build is produced from its tag by the workflow in
+`.github/workflows/release.yml`, so the download matches the source.
+
+## Install from source
 
 Python 3.9 or later.
 
@@ -206,13 +216,6 @@ and signing that browser out revokes it.
 - **Mastodon and Pixelfed.** Documented public APIs, no application to file:
   the cheapest platforms left to add.
 - **Facebook.** Wanted since the very first todo list, never actually wired up.
-
-### Shipping a 1.0
-
-- **A tagged 1.0 release.** The version is in the code and the build is
-  reproducible from `packaging/spp.spec`; what is left is the tag, a GitHub
-  Release with the build attached and notes saying what works, and a workflow
-  to produce it rather than one machine, so the download matches the tag.
 
 ### After 1.0
 

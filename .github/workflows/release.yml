@@ -1,0 +1,46 @@
+name: Release
+
+# Builds the Windows application whenever a version tag is pushed, and attaches
+# it to that tag's release. Building here rather than on one person's machine is
+# what makes the download match the tag.
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt pyinstaller
+
+      - name: Build
+        run: pyinstaller --noconfirm packaging/spp.spec
+
+      - name: Package
+        shell: pwsh
+        run: |
+          $name = "SPP-$env:GITHUB_REF_NAME-windows.zip"
+          Compress-Archive -Path dist/SPP/* -DestinationPath $name
+          "ASSET=$name" | Out-File -FilePath $env:GITHUB_ENV -Append
+          "{0:N0} MB" -f ((Get-Item $name).Length / 1MB)
+
+      - name: Attach to the release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload $env:GITHUB_REF_NAME $env:ASSET --clobber
