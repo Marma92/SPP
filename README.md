@@ -56,7 +56,7 @@ you just composed.
 | Platform  | Picture sent | Caption limit | Credentials |
 |-----------|--------------|---------------|-------------|
 | Flickr    | the original, untouched | none | API key + secret |
-| Instagram | 1440×1440, centred on white | 2200 characters | account login, or a browser `sessionid` |
+| Instagram | 1440×1440, centred on white | 2200 characters | sign in from the app, or an account login |
 | Bluesky   | full frame at 2000px, under 1MB | 300 graphemes | handle + app password |
 
 Bluesky posts carry real hashtag facets, alt text, the image aspect ratio and
@@ -134,6 +134,7 @@ libs/
   presets.py      named sets of values worth coming back to
   runner.py       a publishing run, as a stream of events
   publishers/     one module per platform
+  settings.py     the credentials the settings screen reads and writes
   gui/            the window; it drives the publishers, it does not duplicate them
 ```
 
@@ -155,11 +156,17 @@ device is often answered with `ChallengeRequired`. The checkpoint is bound to
 *that device*: clearing it in a browser does not clear it for the library, and
 no `challenge_code_handler` covers the native flow.
 
-The way through is to reuse a browser session that has already been verified.
-Put its `sessionid` cookie in `INSTAGRAM_SESSIONID` (Firefox: F12 → Storage →
-Cookies → instagram.com → sessionid) and it is used instead of the password.
-Treat it as a credential: it expires, and logging that browser out revokes it.
-Use the same machine and connection as the browser.
+**Settings → Sign in to Instagram** hosts Instagram's own login page inside the
+app. Sign in there, complete whatever verification it asks for, and the session
+it hands out is captured and used instead of the password — the browser that
+gets verified is the one doing the posting, which is what the checkpoint wants.
+The session persists between runs, and clearing the field falls back to the
+password.
+
+Failing that, the same value can be pasted in by hand: it is the `sessionid`
+cookie of a browser already signed in (Firefox: F12 → Storage → Cookies →
+instagram.com → sessionid). Treat it as a credential either way — it expires,
+and signing that browser out revokes it.
 
 ## Roadmap
 
@@ -176,13 +183,6 @@ Use the same machine and connection as the browser.
 
 ### Shipping a 1.0
 
-- **Capture the Instagram session in the app.** A Qt WebEngine view on
-  Instagram's login page, the challenge completed inside it, and the
-  `sessionid` read straight off the cookie store — nobody has to know what a
-  cookie is, or open devtools. Everything needed already ships with PySide6,
-  persistent profile included, so the session survives a restart. Embedding
-  Chromium costs some 450 MB in the package: a deliberate price, since asking
-  a stranger to copy a cookie out of Firefox is not a flow that ships.
 - **One executable, downloaded and double-clicked.** PyInstaller over the
   window, with an icon and a version stamped in. It will be a heavy download —
   Qt and the bundled Chromium see to that, and measuring the real figure is
