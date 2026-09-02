@@ -91,6 +91,8 @@ class MainWindow(QMainWindow):
         self.publishers = list(publishers)
         self.post = None
         self.images = {}
+        self.pixmaps = {}
+        self.metas = {}
         self.source_size = None
         self.hints = exif.ExifHints()
         self.remembered = lastpost.load()
@@ -186,7 +188,7 @@ class MainWindow(QMainWindow):
         self.tabs.set_items(
             ["%s · %s" % (p.name.capitalize(), p.image_label) for p in self.publishers]
         )
-        self.tabs.changed.connect(lambda _index: self._refresh_preview())
+        self.tabs.changed.connect(lambda _index: self._on_tab())
         row = QHBoxLayout()
         row.addWidget(self.tabs)
         row.addStretch(1)
@@ -357,6 +359,8 @@ class MainWindow(QMainWindow):
         self.hints = exif.read(picture)
         self.remembered = lastpost.load()
         self.images = {}
+        self.pixmaps = {}
+        self.metas = {}
         try:
             with Image.open(picture) as image:
                 self.source_size = image.size
@@ -391,9 +395,19 @@ class MainWindow(QMainWindow):
             field.flag(kind if value else None)
 
     def _image_ready(self, name, path):
-        self.images[name] = Path(path)
+        path = Path(path)
+        self.images[name] = path
+        pixmap = QPixmap(str(path))
+        if not pixmap.isNull():
+            self.metas[name] = self._describe(path, pixmap)
+            self.pixmaps[name] = pixmap.scaled(
+                PREVIEW_BOX[0] - 20,
+                PREVIEW_BOX[1] - 20,
+                Qt.KeepAspectRatio,
+                Qt.SmoothTransformation,
+            )
         if self.publishers[self.tabs.current()].name == name:
-            self._refresh_preview()
+            self._refresh_visual()
 
     def _image_failed(self, name, detail):
         if self.publishers[self.tabs.current()].name == name:
@@ -419,20 +433,28 @@ class MainWindow(QMainWindow):
         post.usertag = self.f_usertag.widget.text().strip()
 
     def _on_edit(self):
+        """The typing path. It must never touch a file: reloading and
+        rescaling the prepared picture on every keystroke is what made this
+        window crawl."""
         if self.post is None:
             return
         self._sync_post()
-        self._refresh_preview()
+        self._refresh_text()
         self._refresh_footer()
 
-    def _refresh_preview(self):
+    def _on_tab(self):
+        self._refresh_text()
+        self._refresh_visual()
+
+    def _refresh_text(self):
         if self.post is None:
             return
         publisher = self.publishers[self.tabs.current()]
+        caption = self.post.caption
         kept, dropped = publisher.split_text(self.post)
         self.caption.setHtml(caption_html(kept, dropped))
 
-        used = publisher.measure(self.post.caption)
+        used = publisher.measure(caption)
         if publisher.limit is None:
             self.counter.setText("no limit")
             over = False
@@ -447,46 +469,32 @@ class MainWindow(QMainWindow):
             if dropped
             else ""
         )
-        self._refresh_image(publisher)
-        self._refresh_meta(publisher)
 
-    def _refresh_image(self, publisher):
-        path = self.images.get(publisher.name)
-        if path is None:
+    def _refresh_visual(self):
+        """The picture and its numbers, both prepared once per photo."""
+        publisher = self.publishers[self.tabs.current()]
+        pixmap = self.pixmaps.get(publisher.name)
+        if pixmap is None:
             self.image.setPixmap(QPixmap())
             self.image.setText("Preparing…")
+            self.meta.setText("")
             return
-        pixmap = QPixmap(str(path))
-        if pixmap.isNull():
-            self.image.setText("Could not read the prepared picture.")
-            return
-        self.image.setPixmap(
-            pixmap.scaled(
-                PREVIEW_BOX[0] - 20,
-                PREVIEW_BOX[1] - 20,
-                Qt.KeepAspectRatio,
-                Qt.SmoothTransformation,
-            )
-        )
+        self.image.setPixmap(pixmap)
+        self.meta.setText(self.metas.get(publisher.name, ""))
 
-    def _refresh_meta(self, publisher):
-        path = self.images.get(publisher.name)
-        if path is None or self.source_size is None:
-            self.meta.setText("")
-            return
-        try:
-            with Image.open(path) as image:
-                width, height = image.size
-            weight = path.stat().st_size // 1024
-        except OSError:
-            self.meta.setText("")
-            return
-        self.meta.setText(
-            "%d×%d → %d×%d · %d KB"
-            % (self.source_size[0], self.source_size[1], width, height, weight)
+    def _describe(self, path, pixmap):
+        if self.source_size is None:
+            return ""
+        return "%d×%d → %d×%d · %d KB" % (
+            self.source_size[0],
+            self.source_size[1],
+            pixmap.width(),
+            pixmap.height(),
+            path.stat().st_size // 1024,
         )
 
     def _refresh_footer(self):
+        caption = self.post.caption if self.post else ""
         chosen = 0
         for publisher in self.publishers:
             counter = self.counters[publisher.name]
@@ -501,7 +509,7 @@ class MainWindow(QMainWindow):
             if publisher.limit is None:
                 counter.setText("")
                 continue
-            used = publisher.measure(self.post.caption)
+            used = publisher.measure(caption)
             counter.setText("%d / %d" % (used, publisher.limit))
             counter.setStyleSheet(
                 "color: %s;" % (theme.DANGER if used > publisher.limit else theme.MUTED)

@@ -3,7 +3,7 @@
 Post one photograph to Flickr, Instagram and Bluesky in a single pass — resized
 the way each platform wants it, captioned the way each platform counts.
 
-![The SPP window: a photo prepared for Instagram on the left, its metadata form on the right](docs/window.png)
+![The SPP window: an eclipse photograph prepared for Instagram on the left, its metadata form on the right](docs/window.png)
 
 ## The problem it solves
 
@@ -30,7 +30,7 @@ overshoot once the gear block is in. The preview strikes through exactly what
 will be dropped — usually the hashtags, which is precisely what you would want
 to know beforehand.
 
-![The Bluesky tab showing a caption 98 graphemes over the limit, with the dropped tail struck through](docs/over-limit.png)
+![The Bluesky tab showing a caption 45 graphemes over the limit, with the dropped tail struck through](docs/over-limit.png)
 
 **Fills in what it can.** Camera, lens, capture date and GPS coordinates come
 from the picture's EXIF. Film, lab and scanner — which no camera writes — are
@@ -142,6 +142,8 @@ Use the same machine and connection as the browser.
 - a queue: prepare several pictures, publish them in one go
 - named presets, beside the values carried over from the last post
 - scheduled posts
+- more platforms: Mastodon, Pixelfed
+- posting to Facebook
 
 ## License
 
