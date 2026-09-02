@@ -111,6 +111,9 @@ class MainWindow(QMainWindow):
         self.vocabulary = vocabulary.load()
         self.completions = {}
         self.presets = presets.load()
+        # A post has gone out and is still on screen. The next picture is what
+        # ends it, not the publishing.
+        self.published = False
         self._worker = None
 
         self.setWindowTitle("SPP — Simple Photo Poster")
@@ -559,6 +562,15 @@ class MainWindow(QMainWindow):
 
         self.filename.setText(picture.name)
         self.change_button.show()
+
+        if self.published:
+            # The previous frame went out and this is a different one, so its
+            # title, legend and alt text belonged to it. The gear, tags and
+            # place stay: the next frame is usually from the same session.
+            for field in (self.f_title, self.f_legend, self.f_alt):
+                field.widget.clear()
+            self.published = False
+
         self._fill_form()
         # The EXIF only proposes; the box stays the photographer's to untick.
         self.digital.setChecked(self.hints.digital)
@@ -574,18 +586,32 @@ class MainWindow(QMainWindow):
         self._on_edit()
 
     def _fill_form(self):
-        for field, value, kind in (
-            (self.f_camera, self.hints.camera, "exif"),
-            (self.f_lens, self.hints.lens, "exif"),
-            (self.f_date, self.hints.date, "exif"),
-            (self.f_lat, self.hints.lat, "exif"),
-            (self.f_lng, self.hints.lng, "exif"),
-            (self.f_film, self.remembered["film"], "last"),
-            (self.f_lab, self.remembered["lab"], "last"),
-            (self.f_scan, self.remembered["scan"], "last"),
+        """Propose what the new picture knows, without erasing what you typed.
+
+        Camera, lens, date and coordinates belong to the file, so a new file
+        replaces them. Film, lab and scanner belong to the session rather than
+        the frame: they are only offered into a field left empty, or the roll
+        you typed by hand would vanish on the next picture.
+        """
+        for field, value in (
+            (self.f_camera, self.hints.camera),
+            (self.f_lens, self.hints.lens),
+            (self.f_date, self.hints.date),
+            (self.f_lat, self.hints.lat),
+            (self.f_lng, self.hints.lng),
         ):
             field.widget.setText(value)
-            field.flag(kind if value else None)
+            field.flag("exif" if value else None)
+
+        for field, value in (
+            (self.f_film, self.remembered["film"]),
+            (self.f_lab, self.remembered["lab"]),
+            (self.f_scan, self.remembered["scan"]),
+        ):
+            if field.widget.text():
+                continue
+            field.widget.setText(value)
+            field.flag("last" if value else None)
 
     def _on_digital(self, digital):
         """A digital frame has no film, no lab and no scanner: hide all three.
@@ -766,10 +792,6 @@ class MainWindow(QMainWindow):
         dialog.exec()
         # Whatever went out is now worth suggesting next time.
         self._refresh_completions()
-
-        if dialog.posted:
-            # What belonged to that one frame goes; the gear, tags and place
-            # stay, because the next frame is usually from the same session.
-            for field in (self.f_title, self.f_legend, self.f_alt):
-                field.widget.clear()
-            self._on_edit()
+        # Noted, not acted on: what was just published stays on screen to be
+        # read back. Choosing the next picture is what closes the post.
+        self.published = self.published or dialog.posted
