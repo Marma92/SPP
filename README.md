@@ -1,7 +1,13 @@
+<div align="center">
+
+<img src="docs/icon.png" width="132" alt="A twin-lens reflex camera with SPP on its nameplate">
+
 # SPP — Simple Photo Poster
 
-Post one photograph to Flickr, Instagram and Bluesky in a single pass — resized
-the way each platform wants it, captioned the way each platform counts.
+Post one photograph to Flickr, Instagram and Bluesky in a single pass —<br>
+resized the way each platform wants it, captioned the way each platform counts.
+
+</div>
 
 ![The SPP window: an eclipse photograph prepared for Instagram on the left, its metadata form on the right](docs/window.png)
 

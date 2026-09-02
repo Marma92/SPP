@@ -13,7 +13,7 @@ the small sizes is what icon sets have always done.
 
 from pathlib import Path
 
-from PIL import Image, ImageFilter
+from PIL import Image, ImageDraw, ImageFilter
 
 HERE = Path(__file__).resolve().parent
 SOURCE = HERE / "spp-source.png"
@@ -26,6 +26,11 @@ LENS_CENTRE, LENS_SIDE = (616, 700), 760
 DETAIL_FLOOR = 32
 
 SIZES = (16, 24, 32, 48, 64, 128, 256)
+
+# The README shows the icon as a piece of artwork rather than a Windows icon,
+# so that copy gets the rounded corners a square .ico must not have.
+README_ICON = HERE.parent / "docs" / "icon.png"
+README_SIZE, README_RADIUS = 256, 52
 
 
 def _square(image, centre, side):
@@ -57,6 +62,15 @@ def main():
         append_images=frames[:-1],
     )
     render(image, 256).save(HERE / "spp.png")
+
+    rounded = render(image, README_SIZE).convert("RGBA")
+    mask = Image.new("L", (README_SIZE, README_SIZE), 0)
+    ImageDraw.Draw(mask).rounded_rectangle(
+        [0, 0, README_SIZE - 1, README_SIZE - 1], radius=README_RADIUS, fill=255
+    )
+    rounded.putalpha(mask)
+    README_ICON.parent.mkdir(parents=True, exist_ok=True)
+    rounded.save(README_ICON)
     print("spp.ico", (HERE / "spp.ico").stat().st_size // 1024, "KB", "-", list(SIZES))
 
 
