@@ -78,6 +78,13 @@ reason shown rather than an error. `SPP_PLATFORMS` narrows the default
 selection, `SPP_LANGS` sets the language your captions are written in
 (defaults to `fr`).
 
+Everything the app writes — platform sessions, the values it remembers, the
+resized pictures — lives outside the project, in a per-user data directory:
+`%LOCALAPPDATA%\SPP` on Windows, `~/Library/Application Support/SPP` on macOS,
+`~/.local/share/SPP` elsewhere. `SPP_DATA_DIR` moves it. An existing clone's
+`sessions/` and `state/` are copied there once, so nobody has to face
+Instagram's verification challenge a second time.
+
 ## Use
 
 ```
@@ -176,11 +183,11 @@ Use the same machine and connection as the browser.
 
 ### Shipping a 1.0
 
-- **A settings screen, and a home under the user's own data directory.**
-  Credentials sit in a `.env` beside the source, which is fine for whoever
-  cloned the repository and impossible for anyone else. They need a screen in
-  the window instead. The same goes for the working folders: a bundled app
-  cannot assume it may write next to its own executable.
+- **A settings screen.** Credentials still sit in a `.env`, fine for whoever
+  cloned the repository and impossible for anyone else: they need a screen in
+  the window instead. Everything else the app writes has already moved to a
+  per-user data directory, so a bundled copy no longer assumes it may write
+  beside its own executable.
 - **Capture the Instagram session in the app.** A Qt WebEngine view on
   Instagram's login page, the challenge completed inside it, and the
   `sessionid` read straight off the cookie store — nobody has to know what a
