@@ -184,6 +184,16 @@ Use the same machine and connection as the browser.
   cloned the repository and impossible for anyone else. They need a screen in
   the window instead. The same goes for the working folders: a bundled app
   cannot assume it may write next to its own executable.
+- **Capture the Instagram session in the app, rather than asking for
+  devtools.** A Qt WebEngine view on Instagram's login page, the challenge
+  completed inside it, and the `sessionid` read straight off the cookie store —
+  the photographer never has to know what a cookie is. Every piece already
+  ships with PySide6, persistent profile included, so the session survives a
+  restart. What holds it back is weight: embedding Chromium adds some 450 MB
+  to the package, against a 1.0 whose whole promise is a small download. Worth
+  weighing against the option that removes the problem instead of hiding it —
+  Instagram's official Content Publishing API, which wants a Business or
+  Creator account and hands out OAuth rather than a password.
 - **One executable, downloaded and double-clicked.** PyInstaller over the
   window, with an icon and a version stamped in. Two things to be honest about
   up front: Qt makes the build large, and Windows SmartScreen will warn about
