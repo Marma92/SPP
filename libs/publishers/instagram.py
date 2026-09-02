@@ -5,6 +5,7 @@ from libs.publishers.base import Publisher
 
 class InstagramPublisher(Publisher):
     name = "instagram"
+    requires = ("instagrapi",)
     image_label = "1440\u00b2"
     limit = 2200
 

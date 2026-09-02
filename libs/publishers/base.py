@@ -8,6 +8,7 @@ Adding a platform means adding one module here and listing it in
 `libs/publishers/__init__.py` -- nothing else in the project changes.
 """
 
+import importlib.util
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
@@ -29,6 +30,32 @@ class Publisher(ABC):
     image_label = ""
     # Caption limit in the platform's own counting unit; None if there is none.
     limit = None
+    # Client libraries that publish() imports lazily. Naming them here is what
+    # lets a missing one surface before a post is composed, instead of at the
+    # moment of upload, with everything already typed in.
+    requires = ()
+
+    def missing_requirement(self):
+        """The first client library this platform needs and cannot find."""
+        for module in self.requires:
+            try:
+                found = importlib.util.find_spec(module) is not None
+            except (ImportError, ValueError):
+                found = False
+            if not found:
+                return module
+        return None
+
+    def unavailable(self):
+        """One line saying why this platform cannot be used, or None if it can."""
+        missing = self.missing_requirement()
+        if missing:
+            return "%s is not installed -- run pip install -r requirements.txt" % missing
+        try:
+            self.credentials()
+        except MissingCredentials as error:
+            return str(error)
+        return None
 
     @abstractmethod
     def credentials(self):

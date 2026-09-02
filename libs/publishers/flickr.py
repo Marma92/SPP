@@ -4,6 +4,7 @@ from libs.publishers.base import Publisher
 
 class FlickrPublisher(Publisher):
     name = "flickr"
+    requires = ("flickrapi",)
     image_label = "original"
     limit = None
 

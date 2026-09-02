@@ -123,16 +123,14 @@ class MainWindow(QMainWindow):
         box.addStretch(1)
 
         for publisher in self.publishers:
-            configured = publisher.is_configured()
+            reason = publisher.unavailable()
             chip = QWidget()
             row = QHBoxLayout(chip)
             row.setContentsMargins(0, 0, 0, 0)
             row.setSpacing(6)
-            row.addWidget(dot(theme.OK if configured else "#4a443c"))
+            row.addWidget(dot(theme.OK if reason is None else "#4a443c"))
             name = label(publisher.name, "mono")
-            name.setToolTip(
-                "configured in .env" if configured else "missing credentials in .env"
-            )
+            name.setToolTip(reason or "ready")
             row.addWidget(name)
             box.addWidget(chip)
             box.addSpacing(10)
@@ -294,11 +292,18 @@ class MainWindow(QMainWindow):
         self.checks = {}
         self.counters = {}
         for publisher in self.publishers:
+            # A platform whose client library is missing, or whose credentials
+            # are not in .env, cannot be ticked -- and says why on hover.
+            reason = publisher.unavailable()
             check = QCheckBox(publisher.name.capitalize())
-            check.setChecked(publisher.is_configured())
-            check.setEnabled(publisher.is_configured())
+            check.setChecked(reason is None)
+            check.setEnabled(reason is None)
+            check.setToolTip(reason or "")
             check.toggled.connect(self._on_edit)
             counter = label("", "mono")
+            if reason is not None:
+                counter.setText("unavailable")
+                counter.setToolTip(reason)
             self.checks[publisher.name] = check
             self.counters[publisher.name] = counter
 
@@ -471,7 +476,11 @@ class MainWindow(QMainWindow):
         chosen = 0
         for publisher in self.publishers:
             counter = self.counters[publisher.name]
-            if not self.checks[publisher.name].isChecked():
+            check = self.checks[publisher.name]
+            if not check.isEnabled():
+                counter.setText("unavailable")
+                continue
+            if not check.isChecked():
                 counter.setText("")
                 continue
             chosen += 1

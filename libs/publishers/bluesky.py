@@ -46,6 +46,7 @@ def rich_text(text):
 
 class BlueskyPublisher(Publisher):
     name = "bluesky"
+    requires = ("atproto",)
     image_label = "2000 px"
     limit = POST_MAX_GRAPHEMES
 

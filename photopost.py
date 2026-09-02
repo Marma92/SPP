@@ -92,6 +92,12 @@ def main(argv=None):
     print("Posting to: %s%s" % (", ".join(p.name for p in selected),
                                 " (dry run)" if args.dry_run else ""))
 
+    for publisher in selected:
+        reason = publisher.unavailable()
+        if reason:
+            # Better to know now than after every question has been answered.
+            print("warning: %s will fail -- %s" % (publisher.name, reason))
+
     post = collect(args.picture)
     print("\nAnd here ya go!")
 
