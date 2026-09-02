@@ -1,31 +1,150 @@
-# SPP
-Simple Photo Poster : how to post photos to many places at the same time
+# SPP — Simple Photo Poster
 
-### Requirements: ###
+Post one photograph to Flickr, Instagram and Bluesky in a single pass — resized
+the way each platform wants it, captioned the way each platform counts.
 
-Requires Python 3
+![The SPP window: an eclipse photograph prepared for Instagram on the left, its metadata form on the right](docs/window.png)
 
-Also requires :
- - Twython library
- - FlickrAPI library
- - ~~Instapy_cli library~~
- - instagrapi
- - PIL library
- - Resizeimage library
+## The problem it solves
 
-To install all of theses, please type :
+Posting the same picture in three places is three different jobs. Instagram
+wants a square, Bluesky wants the full frame under a megabyte, Flickr wants the
+original untouched. Instagram allows 2200 characters, Bluesky 300 — and counts
+them in graphemes, so an emoji weighs one, not four. Do it by hand and you
+retype the same caption three times; do it with a script and you find out what
+got mangled after it is already public.
 
- ` pip install twython flickrapi instagrapi pillow python-resize-image  `
+SPP composes the post once and shows you, per platform, **the picture that will
+actually be sent and the caption that will actually be published** — before you
+publish anything.
 
-### To use it: ###
+## What it does
 
-- fill the `****auth.py` files with the required data
-- run `photopost.py`.
+**Shows the real thing, not an approximation.** The left half of the window is
+the `prepare()` step made visible. The picture in the preview is the file that
+will be uploaded; the caption is the string that will be posted. No network
+call is involved, so it costs nothing to look.
 
-### TODO: ###
+**Tells you where a caption gets cut.** Bluesky's 300-grapheme limit is easy to
+overshoot once the gear block is in. The preview strikes through exactly what
+will be dropped — usually the hashtags, which is precisely what you would want
+to know beforehand.
 
-_(paste from todo.txt)_
+![The Bluesky tab showing a caption 45 graphemes over the limit, with the dropped tail struck through](docs/over-limit.png)
 
-- Code Cleaning (generic functions needed, and exception handling).
-- Improvement : offering to retrieve EXIF infos to add them to description.
-- Next step : GUI
+**Fills in what it can.** Camera, lens, capture date and GPS coordinates come
+from the picture's EXIF. Film, lab and scanner — which no camera writes — are
+carried over from your last post. Every pre-filled field says where its value
+came from, and typing over it is the whole interaction.
+
+**Fails one platform at a time.** A platform that is down, unconfigured, or
+missing its client library never takes the others with it. The window greys it
+out and says why before you start; the run reports each platform separately.
+
+## Platforms
+
+| Platform  | Picture sent | Caption limit | Credentials |
+|-----------|--------------|---------------|-------------|
+| Flickr    | the original, untouched | none | API key + secret |
+| Instagram | 1440×1440, centred on white | 2200 characters | account login, or a browser `sessionid` |
+| Bluesky   | full frame at 2000px, under 1MB | 300 graphemes | handle + app password |
+
+Bluesky posts carry real hashtag facets, alt text, the image aspect ratio and
+the caption language. Instagram posts carry the location and a user tag.
+
+Twitter/X was dropped in 2023 along with API v1.1. The publisher is still in the
+history if it is ever worth porting to v2.
+
+## Install
+
+Python 3.9 or later.
+
+```
+python -m venv .venv
+.venv/Scripts/activate        # Linux/macOS: source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+## Configure
+
+Credentials live in a git-ignored `.env` at the root of the project:
+
+```
+cp .env.example .env
+```
+
+Fill in only the platforms you use — the others are simply skipped, with a
+reason shown rather than an error. `SPP_PLATFORMS` narrows the default
+selection, `SPP_LANGS` sets the language your captions are written in
+(defaults to `fr`).
+
+## Use
+
+```
+python spp_gui.py                 # the window
+python spp_gui.py shot.jpg        # opens straight on that picture
+```
+
+Drop a photo on the window, or drag one from your file manager.
+
+The command line does the same job without the preview, and is the better
+choice when you already know what you are posting:
+
+```
+python photopost.py                                  # asks for everything
+python photopost.py shot.jpg --dry-run               # prepares and shows, posts nothing
+python photopost.py shot.jpg -p flickr,bluesky       # only these two
+```
+
+`--dry-run` prepares every image and prints every caption without touching the
+network. The exit code is non-zero if any platform failed.
+
+## How it works
+
+```
+libs/
+  config.py       credentials and paths, read from .env when first needed
+  post.py         one Post object: the picture and everything said about it
+  images.py       resizing, EXIF orientation, per-platform size caps
+  exif.py         camera, lens, date and GPS read back from the file
+  lastpost.py     film, lab and scanner carried over
+  runner.py       a publishing run, as a stream of events
+  publishers/     one module per platform
+  gui/            the window; it drives the publishers, it does not duplicate them
+```
+
+The window and the CLI consume the same `runner.run()` event stream and the
+same publishers, so the preview cannot drift from what actually gets posted.
+
+### Adding a platform
+
+One module in `libs/publishers/` implementing three methods —
+`credentials()`, `prepare_image()` and `publish()` — plus whatever it caps
+(`limit`, `measure`, `split_text`) and the library it needs (`requires`).
+List it in `libs/publishers/__init__.py`. Nothing else in the project changes,
+window included.
+
+## When Instagram asks for a verification
+
+`instagrapi` drives the private mobile API, so a first login from an unknown
+device is often answered with `ChallengeRequired`. The checkpoint is bound to
+*that device*: clearing it in a browser does not clear it for the library, and
+no `challenge_code_handler` covers the native flow.
+
+The way through is to reuse a browser session that has already been verified.
+Put its `sessionid` cookie in `INSTAGRAM_SESSIONID` (Firefox: F12 → Storage →
+Cookies → instagram.com → sessionid) and it is used instead of the password.
+Treat it as a credential: it expires, and logging that browser out revokes it.
+Use the same machine and connection as the browser.
+
+## Still to come
+
+- a queue: prepare several pictures, publish them in one go
+- named presets, beside the values carried over from the last post
+- scheduled posts
+- more platforms: Mastodon, Pixelfed
+- posting to Facebook
+
+## License
+
+MIT — see [LICENSE](LICENSE).

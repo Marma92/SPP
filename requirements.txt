@@ -1,0 +1,9 @@
+# Core
+PySide6>=6.6           # the desktop window; the CLI runs without it
+pillow>=10.1          # replaces python-resize-image (unmaintained since 2018)
+python-dotenv>=1.0
+
+# Platforms
+flickrapi>=2.4
+instagrapi>=2.1
+atproto>=0.0.61       # Bluesky
