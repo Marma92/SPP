@@ -15,18 +15,39 @@ class InstagramPublisher(Publisher):
     def prepare_image(self, post):
         return prepare_for_instagram(post.filepath)
 
-    def publish(self, post, prepared):
+    def _save(self, client):
+        """instagrapi's own JSON settings, rather than a pickle of the client.
+
+        These carry the device identifiers Instagram fingerprints the login
+        with, so they must survive every attempt, successful or not.
+        """
+        config.SESSION_DIR.mkdir(parents=True, exist_ok=True)
+        client.dump_settings(config.INSTAGRAM_SESSION_FILE)
+
+    def _connect(self, auth):
         from instagrapi import Client
-        from instagrapi.types import Location, Usertag
 
-        auth = self.credentials()
-
-        # instagrapi's own JSON settings, rather than pickling the whole
-        # client: a pickle breaks on every library upgrade.
         client = Client()
         if config.INSTAGRAM_SESSION_FILE.exists():
             client.load_settings(config.INSTAGRAM_SESSION_FILE)
-        client.login(auth.username, auth.password)
+        else:
+            # Freeze the freshly generated device before logging in. A
+            # verification challenge aborts login(), and coming back with a
+            # different device only earns another challenge -- so the very
+            # first attempt has to leave its identifiers on disk.
+            self._save(client)
+
+        try:
+            client.login(auth.username, auth.password)
+        finally:
+            self._save(client)
+        return client
+
+    def publish(self, post, prepared):
+        from instagrapi.types import Location, Usertag
+
+        auth = self.credentials()
+        client = self._connect(auth)
 
         location = None
         if post.location:
@@ -48,5 +69,4 @@ class InstagramPublisher(Publisher):
             )
             return "https://www.instagram.com/p/%s/" % media.code
         finally:
-            config.SESSION_DIR.mkdir(parents=True, exist_ok=True)
-            client.dump_settings(config.INSTAGRAM_SESSION_FILE)
+            self._save(client)
