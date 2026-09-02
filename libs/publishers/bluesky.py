@@ -56,21 +56,8 @@ class BlueskyPublisher(Publisher):
     def measure(self, text):
         return grapheme_length(text)
 
-    def split_text(self, post):
-        text = unicodedata.normalize("NFC", post.caption)
-        if grapheme_length(text) <= POST_MAX_GRAPHEMES:
-            return text, ""
-
-        budget = POST_MAX_GRAPHEMES - grapheme_length(ELLIPSIS)
-        cut = 0
-        used = 0
-        for index, char in enumerate(text):
-            if unicodedata.category(char) not in ZERO_WIDTH_CATEGORIES:
-                used += 1
-            if used > budget:
-                break
-            cut = index + 1
-        return text[:cut].rstrip() + ELLIPSIS, text[cut:]
+    def normalise(self, text):
+        return unicodedata.normalize("NFC", text)
 
     def prepare_image(self, post):
         return prepare_for_bluesky(post.filepath)

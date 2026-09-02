@@ -4,8 +4,8 @@
 
 # SPP — Simple Photo Poster
 
-Post one photograph to Flickr, Instagram and Bluesky in a single pass —<br>
-resized the way each platform wants it, captioned the way each platform counts.
+Post one photograph to Flickr, Instagram, Bluesky, Mastodon and Pixelfed in a<br>
+single pass — resized the way each wants it, captioned the way each counts.
 
 </div>
 
@@ -13,12 +13,13 @@ resized the way each platform wants it, captioned the way each platform counts.
 
 ## The problem it solves
 
-Posting the same picture in three places is three different jobs. Instagram
-wants a square, Bluesky wants the full frame under a megabyte, Flickr wants the
+Posting the same picture in five places is five different jobs. Instagram wants
+a square, Bluesky wants the full frame under a megabyte, Flickr wants the
 original untouched. Instagram allows 2200 characters, Bluesky 300 — and counts
-them in graphemes, so an emoji weighs one, not four. Do it by hand and you
-retype the same caption three times; do it with a script and you find out what
-got mangled after it is already public.
+them in graphemes, so an emoji weighs one, not four — while a Mastodon instance
+allows whatever its admin decided. Do it by hand and you retype the same caption
+five times; do it with a script and you find out what got mangled after it is
+already public.
 
 SPP composes the post once and shows you, per platform, **the picture that will
 actually be sent and the caption that will actually be published** — before you
@@ -64,9 +65,19 @@ you just composed.
 | Flickr    | the original, untouched | none | API key + secret |
 | Instagram | 1440×1440, centred on white | 2200 characters | sign in from the app, or an account login |
 | Bluesky   | full frame at 2000px, under 1MB | 300 graphemes | handle + app password |
+| Mastodon  | full frame at 2048px | 500 characters, or what your instance allows | instance + access token |
+| Pixelfed  | full frame at 2048px | 500 characters, or what your instance allows | instance + access token |
 
 Bluesky posts carry real hashtag facets, alt text, the image aspect ratio and
 the caption language. Instagram posts carry the location and a user tag.
+Mastodon and Pixelfed speak the same API and share one implementation, so they
+differ only by the server you point them at; both carry alt text and the
+caption language.
+
+Mastodon has been posted to for real. **Pixelfed has not**: it rides the same
+implementation, so the path itself is proven, but its own API compatibility is
+untested — if it refuses a status, the caption language is the first parameter
+to suspect.
 
 Twitter/X was dropped in 2023 along with API v1.1. The publisher is still in the
 history if it is ever worth porting to v2.
@@ -169,7 +180,7 @@ libs/
   vocabulary.py   every value ever typed, for completion
   presets.py      named sets of values worth coming back to
   runner.py       a publishing run, as a stream of events
-  publishers/     one module per platform
+  publishers/     one module per platform (two of them share fediverse.py)
   settings.py     the credentials the settings screen reads and writes
   gui/            the window; it drives the publishers, it does not duplicate them
 ```
@@ -213,8 +224,6 @@ and signing that browser out revokes it.
   count, so this is a port to `tweepy`'s `create_tweet` rather than a rewrite.
   It needs a developer account, and the free tier is write-only and capped —
   worth checking the current terms before counting on it.
-- **Mastodon and Pixelfed.** Documented public APIs, no application to file:
-  the cheapest platforms left to add.
 - **Facebook.** Wanted since the very first todo list, never actually wired up.
 
 ### After 1.0

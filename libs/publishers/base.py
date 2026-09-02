@@ -15,6 +15,8 @@ from pathlib import Path
 
 from libs.config import MissingCredentials
 
+ELLIPSIS = "…"
+
 
 @dataclass
 class Prepared:
@@ -72,9 +74,30 @@ class Publisher(ABC):
         """Length of `text` the way this platform counts it."""
         return len(text)
 
+    def normalise(self, text):
+        """The form this platform will see, before anything is counted."""
+        return text
+
     def split_text(self, post):
-        """(kept, dropped): what the platform will publish, and what it cuts."""
-        return post.caption, ""
+        """(kept, dropped): what the platform will publish, and what it cuts.
+
+        One algorithm for every platform; each supplies its own ruler through
+        `measure`, so a grapheme counter and a character counter cut in the
+        same place for the same reason.
+        """
+        text = self.normalise(post.caption)
+        if self.limit is None or self.measure(text) <= self.limit:
+            return text, ""
+
+        budget = self.limit - self.measure(ELLIPSIS)
+        cut = 0
+        used = 0
+        for index, char in enumerate(text):
+            used += self.measure(char)
+            if used > budget:
+                break
+            cut = index + 1
+        return text[:cut].rstrip() + ELLIPSIS, text[cut:]
 
     def render_text(self, post):
         return self.split_text(post)[0]

@@ -2,10 +2,17 @@
 
 from libs.publishers.base import Prepared, Publisher
 from libs.publishers.bluesky import BlueskyPublisher
+from libs.publishers.fediverse import MastodonPublisher, PixelfedPublisher
 from libs.publishers.flickr import FlickrPublisher
 from libs.publishers.instagram import InstagramPublisher
 
-ALL = (FlickrPublisher, InstagramPublisher, BlueskyPublisher)
+ALL = (
+    FlickrPublisher,
+    InstagramPublisher,
+    BlueskyPublisher,
+    MastodonPublisher,
+    PixelfedPublisher,
+)
 NAMES = tuple(cls.name for cls in ALL)
 
 

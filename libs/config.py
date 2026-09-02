@@ -42,7 +42,7 @@ def _data_dir():
 
 
 DATA_DIR = _data_dir()
-RESIZE_DIR = DATA_DIR / "resizes"
+FEDIVERSE_DIR = DATA_DIR / "fediverse"
 INSTAGRAM_DIR = DATA_DIR / "instagram"
 BLUESKY_DIR = DATA_DIR / "bluesky"
 SESSION_DIR = DATA_DIR / "sessions"
@@ -151,6 +151,41 @@ class InstagramAuth:
         return cls(
             *_require("Instagram", "INSTAGRAM_USERNAME", "INSTAGRAM_PASSWORD"), ""
         )
+
+
+# Mastodon's default, which Pixelfed shares. Instances may raise it, so the
+# figure is configurable rather than baked in -- and it must stay a local
+# answer, since the preview is not allowed to touch the network.
+FEDIVERSE_DEFAULT_LIMIT = 500
+
+
+def fediverse_limit(prefix):
+    raw = os.getenv("%s_MAX_CHARS" % prefix, "").strip()
+    try:
+        return int(raw) if raw else FEDIVERSE_DEFAULT_LIMIT
+    except ValueError:
+        return FEDIVERSE_DEFAULT_LIMIT
+
+
+@dataclass(frozen=True)
+class FediverseAuth:
+    """Mastodon and Pixelfed differ by their address and their token, and by
+    nothing else this application cares about."""
+
+    instance: str
+    token: str
+
+    @classmethod
+    def load(cls, platform, prefix):
+        instance, token = _require(
+            platform, "%s_INSTANCE" % prefix, "%s_TOKEN" % prefix
+        )
+        # People write "mastodon.social", "https://mastodon.social" and
+        # "https://mastodon.social/" and mean the same server.
+        instance = instance.rstrip("/")
+        if "://" not in instance:
+            instance = "https://" + instance
+        return cls(instance=instance, token=token)
 
 
 @dataclass(frozen=True)

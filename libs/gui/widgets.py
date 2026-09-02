@@ -113,7 +113,7 @@ class SegmentedBar(QWidget):
         self._box.setSpacing(3)
         self._buttons = []
 
-    def set_items(self, captions):
+    def set_items(self, captions, tooltips=()):
         for button in self._buttons:
             self._box.removeWidget(button)
             button.deleteLater()
@@ -122,6 +122,8 @@ class SegmentedBar(QWidget):
         for index, caption in enumerate(captions):
             button = QPushButton(caption)
             button.setProperty("role", "tab")
+            if index < len(tooltips):
+                button.setToolTip(tooltips[index])
             button.setCheckable(True)
             button.setChecked(index == 0)
             button.clicked.connect(lambda _=False, position=index: self.select(position))
